@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="app-version" content="1.0.0">
+<title>생기부 도우미</title>
+<style>
+:root{--bg:#f4f3ee;--panel:#fff;--ink:#1f2328;--muted:#6b7280;--line:#e3e0d6;--accent:#2f6f5e;--accent-ink:#fff;--accent-soft:#e2efe9;--neg:#a2463a;--neg-soft:#f7e6e2;--warn:#94570a;--warn-soft:#fcf1d4;--mid:#3b5b9a;--mid-soft:#e4ebf7}
+@media (prefers-color-scheme:dark){:root{--bg:#141619;--panel:#1d2024;--ink:#e8e6e1;--muted:#9aa0a6;--line:#30343a;--accent:#6fbfa6;--accent-ink:#0e1a16;--accent-soft:#1d362f;--neg:#e3a291;--neg-soft:#3a2420;--warn:#f0b35a;--warn-soft:#3a2f17;--mid:#9db6ea;--mid-soft:#232e45}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Pretendard","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:17px;margin:0 6px 0 0;letter-spacing:-.3px;cursor:pointer}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav button{border:none;background:transparent;padding:6px 10px;border-radius:9px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+nav button.on{background:var(--accent-soft);color:var(--accent)}
+nav .num{width:22px;height:22px;font-size:12px}
+.sp{flex:1}
+.pill{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:4px 10px;cursor:pointer;background:var(--panel)}
+.dot{width:9px;height:9px;border-radius:50%;background:#aaa}.dot.ok{background:#2fa36b}.dot.bad{background:#d0533f}.dot.wait{background:#e0a33a}
+.banner{background:var(--warn-soft);color:var(--warn);font-size:13px;padding:7px 18px;text-align:center;font-weight:600}
+button,select,input,textarea{font:inherit;color:inherit}
+button{border:1px solid var(--line);background:var(--panel);padding:7px 13px;border-radius:9px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+button.sm{padding:3px 9px;font-size:12.5px}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:6px 10px}
+textarea{width:100%;resize:vertical;line-height:1.7}
+input:disabled,textarea:disabled,select:disabled{opacity:.75;background:var(--bg)}
+label.f{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:600}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.num{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:800;flex:none}
+.num.big{width:64px;height:64px;font-size:32px}
+.num.mid{width:44px;height:44px;font-size:22px}
+.num.done{background:#2fa36b}
+.num.todo{background:var(--line);color:var(--muted)}
+.stephead{display:flex;align-items:center;gap:16px;margin:4px 0 16px}
+.stephead h2{margin:0;font-size:22px}
+.stephead p{margin:2px 0 0;color:var(--muted)}
+.nextbar{display:flex;justify-content:space-between;gap:10px;margin:18px 0 30px}
+.nextbar button{padding:11px 18px;font-size:15px}
+.grid3{display:grid;grid-template-columns:200px minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:1050px){.grid3,.grid2{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;margin-bottom:14px}
+.panel h3{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.panel h3 small{font-weight:400;color:var(--muted);font-size:12.5px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hint{font-size:13px;color:var(--muted);margin:6px 0}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.step{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:18px;display:flex;gap:14px;cursor:pointer;transition:border-color .15s}
+.step:hover{border-color:var(--accent)}
+.step.next{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.step h4{margin:2px 0 4px;font-size:17px}
+.step p{margin:0 0 8px;color:var(--muted);font-size:13.5px}
+.step .st{font-size:13px;font-weight:700}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--accent);color:var(--accent-ink);margin-left:6px}
+.slist{display:flex;flex-direction:column;gap:3px;max-height:70vh;overflow:auto}
+.stu{display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.stu:hover{background:var(--bg)}.stu.on{background:var(--accent-soft);border-color:var(--accent)}
+.stu .no{width:22px;text-align:right;color:var(--muted);font-size:12px}.stu .nm{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.badge{font-size:11.5px;padding:1px 7px;border-radius:9px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.badge.done{background:var(--accent-soft);color:var(--accent)}.badge.bad{background:var(--neg-soft);color:var(--neg)}
+.cat{margin-bottom:12px}.cat h4{font-size:13.5px;margin:0 0 5px}.cat .sub{font-size:11.5px;color:var(--muted);margin:5px 0 3px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{border:1px solid var(--line);border-radius:16px;padding:3px 10px;font-size:13px;cursor:pointer;user-select:none}
+.chip.pos.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip.neg.on{background:var(--neg-soft);border-color:var(--neg);color:var(--neg);font-weight:700}
+.counter{font-size:12px;color:var(--muted);display:flex;gap:12px;margin-top:3px}.counter .over{color:var(--neg);font-weight:600}
+.warns{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.warn{background:var(--warn-soft);color:var(--warn);padding:5px 9px;border-radius:7px;font-size:12.5px}
+.dup{background:var(--neg-soft);color:var(--neg);padding:5px 9px;border-radius:7px;font-size:12.5px;font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:7px;text-align:left;vertical-align:top}
+.tbl th{font-size:12.5px;color:var(--muted);font-weight:700;background:var(--bg);position:sticky;top:0;z-index:1}
+.scroll{overflow:auto;max-height:70vh}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;border-radius:0;padding:4px 10px;background:var(--panel)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on.상{background:var(--accent);color:var(--accent-ink)}.seg button.on.중{background:var(--mid);color:#fff}.seg button.on.하{background:var(--neg);color:#fff}
+.acard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--panel)}
+.acard.locked{border-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 35%,var(--panel))}
+.acard .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lv3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:800px){.lv3{grid-template-columns:1fr}}
+.lv3 .t{font-size:12.5px;font-weight:700;margin-bottom:3px}
+.stdbox{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px;font-size:13px}
+.stdbox label{display:flex;gap:6px;padding:2px 0;cursor:pointer}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;color:var(--muted);font-size:13.5px}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.path{font-family:Consolas,monospace;font-size:12.5px;background:var(--bg);padding:3px 8px;border-radius:6px;word-break:break-all}
+.files{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.file{display:flex;gap:8px;align-items:center;font-size:13px;padding:4px 6px;border-radius:7px;background:var(--bg)}
+.file .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog{font-size:12.5px;color:var(--accent);min-height:18px;margin-top:6px}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0}
+.bar>div{height:100%;background:var(--accent);transition:width .3s}
+.bar.ind>div{width:35%!important;animation:ind 1.2s infinite linear}
+@keyframes ind{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+.stopBtn{display:none}body.busy .stopBtn{display:inline-block}
+body.busy .gen{opacity:.45;pointer-events:none}
+details{font-size:13px;margin-top:8px}details pre{white-space:pre-wrap;background:var(--bg);padding:8px;border-radius:7px;max-height:240px;overflow:auto}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);width:min(640px,94vw);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:.93}
+.offices{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:14px 0}
+.offices button{padding:12px;font-weight:600}
+.offices button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.welcome{max-width:900px;margin:30px auto}
+.lvsum{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1 data-act="tab" data-v="home">생기부 도우미</h1>
+  <nav id="tabs"></nav>
+  <span class="sp"></span>
+  <span class="pill" data-act="tab" data-v="home" id="aiPill"><span id="dot" class="dot wait"></span><span id="statusText">AI 준비 중</span></span>
+</header>
+<div class="banner">⚠ AI가 만든 문장은 초안이에요. 나이스(NEIS)에 입력하기 전에 반드시 읽고 사실과 다른 부분이 없는지 확인하세요.</div>
+<main id="view"><div class="empty">불러오는 중…</div></main>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+
+<script>
+/* =================== 기본 데이터 =================== */
+const OFFICES=["서울특별시교육청","부산광역시교육청","대구광역시교육청","인천광역시교육청","광주광역시교육청","대전광역시교육청","울산광역시교육청","세종특별자치시교육청","경기도교육청","강원특별자치도교육청","충청북도교육청","충청남도교육청","전북특별자치도교육청","전라남도교육청","경상북도교육청","경상남도교육청","제주특별자치도교육청"];
+const SUBJ_ORDER=['국어','사회','도덕','수학','과학','실과','체육','음악','미술','영어','바른 생활','슬기로운 생활','즐거운 생활'];
+const METHODS=['서술형','논술형','구술','실험·실습','관찰','보고서','포트폴리오','프로젝트','토의·토론','실기','자기·동료평가'];
+const PUBLISHERS=['국정','천재교육','천재교과서','비상교육','미래엔','동아출판','아이스크림미디어','지학사','김영사','금성출판사','교학사','YBM'];
+const PERIOD={'1':'1학기','2':'2학기','Y':'학년 전체'};
+const CATS=[
+ {id:'study',label:'학습 태도',pos:['수업에 집중함','적극적으로 발표함','궁금한 것을 질문함','과제를 성실히 해결함','탐구심이 강함','꼼꼼하게 정리함','창의적 아이디어가 많음','모둠 활동에서 역할을 잘 수행함','배운 것을 친구에게 잘 설명함','끈기 있게 문제를 해결함','자기 생각을 글로 잘 표현함','자료를 찾아 활용하는 능력이 좋음'],neg:['집중 시간이 짧음','과제 제출이 늦음','발표를 어려워함','기초학력 보충이 필요함','글씨·정리가 미흡함','어려운 과제를 쉽게 포기함']},
+ {id:'peer',label:'교우 관계',pos:['친구를 잘 배려함','갈등을 중재함','리더십이 있음','친구들에게 신뢰받음','소외된 친구를 챙김','양보를 잘함','협력을 잘함','후배·동생을 잘 돌봄'],neg:['친구와 갈등이 잦음','교우 관계가 좁음','말이 거칠 때가 있음','자기주장이 강함','장난이 지나칠 때가 있음']},
+ {id:'mind',label:'성격·정서',pos:['밝고 명랑함','차분하고 신중함','감정 조절을 잘함','자신감이 있음','유머 감각이 있음','공감 능력이 뛰어남','긍정적임','정직함','호기심이 많음'],neg:['소극적이고 수줍음이 많음','감정 기복이 있음','실수에 쉽게 위축됨','쉽게 화를 냄','타인의 시선을 많이 의식함']},
+ {id:'life',label:'생활 습관·책임감',pos:['규칙을 잘 지킴','1인 1역을 성실히 수행함','정리정돈을 잘함','예절이 바름','시간 약속을 잘 지킴','학급 일에 자발적으로 참여함','공공질서를 잘 지킴','환경 보호를 실천함'],neg:['준비물을 자주 빠뜨림','정리정돈이 미흡함','지각이 잦음','규칙 준수가 부족함','수업 중 잡담이 많음']},
+ {id:'talent',label:'특기·관심 분야',pos:['운동','미술','음악','글쓰기','독서','수학','과학 탐구','컴퓨터·코딩','만들기','외국어','요리','봉사·나눔','역사','토론'],neg:[]}
+];
+const OPEN_HB=['학생의 가장 두드러진 강점으로 첫 문장을 시작함','교사가 관찰한 구체적인 장면으로 첫 문장을 시작함','친구들과 어울리는 모습으로 첫 문장을 시작함','학습에 임하는 태도로 첫 문장을 시작함','성격과 정서적 특징으로 첫 문장을 시작함','학급 생활과 책임감으로 첫 문장을 시작함','관심 분야나 특기로 첫 문장을 시작함','한 해 동안 성장한 모습으로 첫 문장을 시작함'];
+const OPEN_GYO=['성취기준에 대한 이해 정도로 첫 문장을 시작함','수행평가 과제를 해결하는 장면으로 첫 문장을 시작함','학습에 참여하는 태도로 첫 문장을 시작함','문제를 해결하는 방식의 특징으로 첫 문장을 시작함','가장 높은 성취를 보인 단원으로 첫 문장을 시작함','학기 동안 성장한 점으로 첫 문장을 시작함','활동 결과물의 특징으로 첫 문장을 시작함'];
+const OPEN_NU=['관찰한 행동으로 바로 시작함','상황의 배경을 짧게 밝히고 시작함','행동이 주변에 준 영향을 중심으로 씀','교사의 지도와 학생의 반응을 중심으로 씀'];
+const STEPS=[
+ {n:1,tab:'roster',title:'학생 명단',desc:'학생 수만 입력하면 번호가 자동으로 만들어져요. 이름은 옆 칸에 넣어요.'},
+ {n:2,tab:'obs',title:'행동 관찰 · 행발',desc:'학생마다 성격·행동을 체크하고 행동특성 및 종합의견, 누가기록을 만들어요.'},
+ {n:3,tab:'plan',title:'평가 계획',desc:'학기별 단원과 성취기준을 고르고, 상·중·하 평가기준을 만들어 확정해요.'},
+ {n:4,tab:'grade',title:'성적 입력',desc:'수행평가마다 학생별로 상·중·하를 눌러요.'},
+ {n:5,tab:'gyo',title:'교과 발달상황',desc:'성적과 관찰을 바탕으로 학생마다 서로 다른 교과 문장을 만들어요.'},
+ {n:6,tab:'result',title:'검사 · 내보내기',desc:'똑같은 문장이 없는지 검사하고 엑셀(CSV)로 내보내요.'},
+];
+
+/* =================== 상태 =================== */
+const DEF_SETTINGS={model:'',temperature:0.8,maxTokens:1200,len:{hb:400,nu:150,gyo:250},docSim:0.7,retries:4,schoolRules:''};
+let state={v:3,office:'',grade:'6',settings:JSON.parse(JSON.stringify(DEF_SETTINGS)),students:[],cur:null,tab:'home',
+  plan:{subjects:{},assessments:[]},customStd:{},lastExport:'',
+  ui:{obsMode:'hb',planSubj:'',planSem:'1',gradeSubj:'',gradeSem:'1',gyoSubj:'',gyoPeriod:'1',stdSubj:''}};
+let RULES=null,STD=null,INFO=null,SETUP=null;const REFS={};
+function newStudent(no){return {id:uid(),no,name:'',checks:[],memo:'',hb:null,nu:[],gyo:{},levels:{},gyoMemo:{}};}
+function adopt(s){
+  if(!s||!Array.isArray(s.students))return;
+  Object.assign(state,s);
+  state.settings={...JSON.parse(JSON.stringify(DEF_SETTINGS)),...(s.settings||{}),len:{...DEF_SETTINGS.len,...((s.settings||{}).len||{})}};
+  state.ui={...state.ui,...(s.ui||{})};state.plan=state.plan||{subjects:{},assessments:[]};
+  state.students.forEach(x=>{x.nu=x.nu||[];x.gyo=x.gyo||{};x.levels=x.levels||{};x.gyoMemo=x.gyoMemo||{};x.checks=x.checks||[];x.memo=x.memo||'';
+    if(x.hb)delete x.hb.reviewed;Object.values(x.gyo).forEach(g=>delete g.reviewed);x.nu.forEach(n=>delete n.reviewed);});
+  if(!state.grade&&s.settings&&s.settings.grade)state.grade=String(s.settings.grade);
+}
+let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(flush,500);}
+function flush(){clearTimeout(saveT);return fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)}).catch(()=>toast('저장하지 못했어요. 프로그램이 켜져 있는지 확인하세요.'));}
+window.addEventListener('beforeunload',()=>{navigator.sendBeacon&&navigator.sendBeacon('/api/state',new Blob([JSON.stringify(state)],{type:'application/json'}));});
+
+/* =================== 유틸 =================== */
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S=()=>[...state.students].sort((a,b)=>a.no-b.no);
+const curS=()=>state.students.find(s=>s.id===state.cur)||null;
+const byId=id=>state.students.find(s=>s.id===id);
+const dname=s=>s.name||`${s.no}번`;
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+const lenOf=t=>[...(t||'')].length;
+async function getJSON(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(await r.text());return r.json();}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2200);}
+const band=()=>{const g=+state.grade||6;return g<=2?'1-2':g<=4?'3-4':'5-6';};
+function subjects(){const b=(STD&&STD.bands[band()])||{};return SUBJ_ORDER.filter(s=>b[s]||(state.customStd[s]||[]).length);}
+function stdList(subj){return [...(((STD||{}).bands||{})[band()]||{})[subj]||[],...(state.customStd[subj]||[])];}
+function stdText(subj,code){const f=stdList(subj).find(x=>x[0]===code);return f?f[1]:'';}
+function neisBytes(s){const b=(RULES&&RULES.bytes)||{hangul:3,ascii:1,enter:1};let n=0;for(const ch of s){n+=ch==='\n'?b.enter:ch.codePointAt(0)<128?b.ascii:b.hangul;}return n;}
+function fixSubj(k){const L=subjects();if(!L.includes(state.ui[k]))state.ui[k]=L[0]||'';return state.ui[k];}
+
+/* =================== 기재요령 (교육청별) =================== */
+function officeRules(){return (RULES&&RULES.offices&&RULES.offices[state.office])||{rules:[],checks:[],note:''};}
+function rulesText(){
+  const L=[...(RULES?RULES.rules:[]),...officeRules().rules,...state.settings.schoolRules.split('\n').map(x=>x.trim()).filter(Boolean)];
+  return L.map((x,i)=>`${i+1}. ${x}`).join('\n');
+}
+function checks(){return [...(RULES?RULES.checks:[]),...(officeRules().checks||[])].map(c=>{try{return [new RegExp(c.re,c.flags||''),c.msg];}catch(e){return null;}}).filter(Boolean);}
+function warnList(text,s){
+  const w=[];if(!text||!text.trim())return w;
+  checks().forEach(([re,m])=>{if(re.test(text))w.push(m);});
+  const allowed=((RULES&&RULES.allowedEnglish)||[]).join('|');
+  if(/[A-Za-z]{2,}/.test(allowed?text.replace(new RegExp('\\b('+allowed+')\\b','g'),''):text))w.push('영문이 있어요. 일반화된 말(AI, SNS 등)이 아니면 한글로 바꾸세요.');
+  const last=text.trim().slice(-1);if(last&&last!=='.')w.push('마침표로 끝나지 않았어요.');
+  if(s&&s.name&&s.name.length>=2&&text.includes(s.name))w.push('학생 이름이 들어 있어요. 주어는 생략해요.');
+  return w;
+}
+function metaHtml(text,target,s,dups,flag){
+  const n=lenOf(text);
+  return `<div class="counter"><span class="${n>target*1.25?'over':''}">${n}자 / 목표 ${target}자</span><span>NEIS ${neisBytes(text||'')}Byte</span></div><div class="warns">`+
+   (dups&&dups.length?dups.map(d=>`<div class="dup">⛔ ${esc(d.who)}와 똑같은 문장: ${esc(d.s)}</div>`).join(''):'')+
+   (flag?`<div class="warn">ℹ ${esc(flag)}</div>`:'')+warnList(text,s).map(x=>`<div class="warn">⚠ ${esc(x)}</div>`).join('')+'</div>';
+}
+
+/* =================== 같은 문장 금지 엔진 =================== */
+function normT(s){return (s||'').replace(/[^가-힣A-Za-z0-9]/g,'');}
+function grams(s,n){const t=normT(s),g=new Set();for(let i=0;i+n<=t.length;i++)g.add(t.slice(i,i+n));return g;}
+function inter(a,b){let i=0;for(const x of a)if(b.has(x))i++;return i;}
+function jac(a,b){if(!a.size||!b.size)return 0;const i=inter(a,b);return i/(a.size+b.size-i);}
+function dice(a,b){if(!a.size||!b.size)return 0;return 2*inter(a,b)/(a.size+b.size);}
+function sents(t){return (t||'').split(/(?<=[.!?])\s+|\n+/).map(x=>x.trim()).filter(x=>normT(x).length>=6);}
+/* 다른 학생과 '같은 문장'(띄어쓰기·문장부호만 다른 것, 글자 대부분이 같은 것 포함) */
+function sameSentences(text,others){
+  const ex=new Map(),list=[];
+  others.forEach(o=>sents(o.text).forEach(x=>{const n=normT(x);if(!ex.has(n))ex.set(n,o.name);list.push({g:grams(x,2),who:o.name,len:n.length});}));
+  const out=[];
+  sents(text).forEach(s=>{const n=normT(s);
+    if(ex.has(n)){out.push({s,who:ex.get(n)});return;}
+    const g=grams(s,2);for(const o of list){if(Math.abs(o.len-n.length)<=Math.max(4,n.length*.15)&&dice(g,o.g)>=0.9){out.push({s,who:o.who});return;}}});
+  return out;
+}
+function maxSim(text,others){const g=grams(text,3);let m=0,who='';others.forEach(o=>{const j=jac(g,grams(o.text,3));if(j>m){m=j;who=o.name;}});return {m,who};}
+function dedupeOwn(t){const seen=new Set();return sents(t).filter(s=>{const n=normT(s);if(seen.has(n))return false;seen.add(n);return true;}).join(' ');}
+function classHints(others){
+  const openings=[],cnt={};
+  others.forEach(o=>{if(!o.text)return;openings.push(o.text.trim().slice(0,14)+'…');
+    const w=o.text.split(/\s+/),seen=new Set();for(let i=0;i+1<w.length;i++){const b=w[i]+' '+w[i+1];if(b.length>=6&&!seen.has(b)){seen.add(b);cnt[b]=(cnt[b]||0)+1;}}});
+  const freq=Object.entries(cnt).filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([b])=>b.replace(/[.,]$/,''));
+  return {openings:[...new Set(openings)].slice(-8),freq};
+}
+function uniqBlock(hints,avoid){
+  const L=[...avoid.map(x=>`${x} (이 문장은 이미 다른 학생에게 썼으니 절대 똑같이 쓰지 말 것)`),...hints.openings.map(x=>`${x} (이렇게 시작하지 말 것)`),...hints.freq.map(x=>`'${x}' 같은 표현`)];
+  if(!L.length)return '[개별화] 이 학생만의 특징이 드러나도록 씁니다.';
+  return `[다른 학생과 겹치지 않게] 같은 반 다른 학생과 똑같은 문장이 하나라도 있으면 안 됩니다. 다음은 이미 쓰인 표현이니 피하세요.\n${L.slice(0,16).map(x=>'- '+x).join('\n')}`;
+}
+async function rewriteSentence(s,others){
+  for(let i=0;i<3;i++){
+    const out=clean(await chat([{role:'system',content:sysPrompt()},{role:'user',content:`다음 문장을 뜻은 그대로 두고 단어와 문장 구조를 바꿔 한 문장으로 다시 쓰세요. 명사형(~함.)으로 끝내고, 다시 쓴 문장만 출력하세요.\n[원래 문장] ${s}`}],null,{temperature:1.0})).split('\n')[0].trim();
+    if(out&&normT(out)!==normT(s)&&!sameSentences(out,others).length)return out;
+  }
+  return null;
+}
+/* 남은 같은 문장을 고쳐 쓰고, 끝까지 안 되면 그 문장을 빼서 '같은 문장 0개'를 보장 */
+async function fixDups(text,others){
+  for(let r=0;r<2;r++){
+    const d=sameSentences(text,others);if(!d.length)return {text,removed:0};
+    for(const {s} of d){if(stopFlag)break;const alt=await rewriteSentence(s,others);if(alt)text=text.replace(s,alt);}
+  }
+  let removed=0;
+  sameSentences(text,others).forEach(({s})=>{if(sents(text).length>1){text=text.replace(s,'').replace(/\s{2,}/g,' ').trim();removed++;}});
+  return {text,removed};
+}
+async function genUnique(build,others,onDelta){
+  let best=null,avoid=[];const R=Math.max(0,+state.settings.retries||0);
+  for(let a=0;a<=R;a++){
+    if(stopFlag)break;
+    let text=await chat(build(a,avoid),onDelta);if(!text)continue;
+    text=dedupeOwn(text);
+    const d=sameSentences(text,others),sim=maxSim(text,others);
+    if(!d.length&&sim.m<state.settings.docSim)return {text,flag:''};
+    const score=d.length*10+sim.m;
+    if(!best||score<best.score)best={text,score,d,sim};
+    avoid=[...new Set([...avoid,...d.map(x=>x.s)])].slice(-6);
+  }
+  if(!best)throw new Error('AI가 빈 응답을 보냈어요.');
+  let text=best.text,removed=0;
+  if(best.d.length)({text,removed}=await fixDups(text,others));
+  const sim=maxSim(text,others);
+  const flag=[removed?`다른 학생과 같은 문장 ${removed}개를 뺐어요. 내용을 보충해 주세요.`:'',sim.m>=state.settings.docSim?`${sim.who}의 문장과 비슷한 편이에요(같은 문장은 없음).`:''].filter(Boolean).join(' ');
+  return {text,flag};
+}
+/* 반 전체에서 같은 문장 찾기 (항목별) */
+function categories(){
+  const cats=[];
+  cats.push({key:'hb',label:'행동특성 및 종합의견',items:S().filter(s=>s.hb&&s.hb.text).map(s=>({owner:dname(s),get:()=>s.hb.text,set:t=>{s.hb.text=t;}}))});
+  cats.push({key:'nu',label:'누가기록',items:S().flatMap(s=>s.nu.filter(n=>n.text).map(n=>({owner:`${dname(s)}(${n.date})`,get:()=>n.text,set:t=>{n.text=t;}})))});
+  const keys=[...new Set(state.students.flatMap(s=>Object.keys(s.gyo).filter(k=>s.gyo[k].text)))].sort();
+  keys.forEach(k=>{const [sub,p]=k.split('|');cats.push({key:k,label:`${sub} 교과(${PERIOD[p]})`,items:S().filter(s=>s.gyo[k]&&s.gyo[k].text).map(s=>({owner:dname(s),get:()=>s.gyo[k].text,set:t=>{s.gyo[k].text=t;}}))});});
+  return cats;
+}
+function dupReport(){
+  const rep=[];
+  categories().forEach(c=>{c.items.forEach((it,i)=>{const others=c.items.filter((_,j)=>j<i).map(o=>({name:o.owner,text:o.get()}));
+    sameSentences(it.get(),others).forEach(d=>rep.push({cat:c.label,item:it,others:()=>c.items.filter(o=>o!==it).map(o=>({name:o.owner,text:o.get()})),s:d.s,who:d.who}));});});
+  return rep;
+}
+async function autoFixAll(){
+  let fixed=0;
+  for(let pass=0;pass<3;pass++){
+    const rep=dupReport();if(!rep.length)break;
+    for(const r of rep){if(stopFlag)return fixed;prog(`같은 문장 고치는 중: ${r.item.owner}`);const {text}=await fixDups(r.item.get(),r.others());r.item.set(text);fixed++;save();}
+  }
+  return fixed;
+}
+
+/* =================== AI 연결 =================== */
+let ctrl=null,stopFlag=false,busy=false;
+function aiReady(){return SETUP&&SETUP.ready;}
+function setStatus(){
+  const d=$('dot'),t=$('statusText');if(!d)return;
+  if(aiReady()){d.className='dot ok';t.textContent='AI 준비 완료';}
+  else if(SETUP&&SETUP.stage==='error'){d.className='dot bad';t.textContent='AI 준비 실패 · 눌러서 확인';}
+  else{d.className='dot wait';t.textContent='AI 준비 중'+(SETUP&&SETUP.progress>0?` ${Math.round(SETUP.progress*100)}%`:'');}
+}
+async function pollSetup(){
+  try{SETUP=await getJSON('/api/setup');}catch(e){SETUP={stage:'error',error:'프로그램과 연결이 끊겼어요. 생기부 도우미를 다시 실행하세요.'};}
+  setStatus();const box=$('setupBox');if(box)box.innerHTML=setupHtml();
+  if(!aiReady()&&SETUP.stage!=='error')setTimeout(pollSetup,1500);
+}
+function setupHtml(){
+  if(!SETUP)return '';
+  if(aiReady())return `<b>✔ AI 준비 완료</b> <span class="hint">${esc(SETUP.model||'')}</span>`;
+  if(SETUP.stage==='error')return `<b style="color:var(--neg)">AI를 준비하지 못했어요</b><p class="hint">${esc(SETUP.error)}</p><button class="primary" data-act="retrySetup">다시 시도</button>`;
+  const p=SETUP.progress;return `<b>AI 준비 중…</b> <span class="hint">처음 한 번만 필요해요. 기다리는 동안 ①~④ 단계를 먼저 해도 돼요.</span><div class="bar ${p>=0?'':'ind'}"><div style="width:${Math.max(0,p)*100}%"></div></div><div class="hint">${esc(SETUP.message||'')}</div>`;
+}
+function clean(t){
+  return t.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/<\|?channel\|?>[\s\S]*?<\|?(message|channel)\|?>/g,'').replace(/\*\*/g,'')
+   .replace(/^\s*(행동특성 및 종합의견|행동 누가기록|누가기록|교과학습발달상황|결과|답변)\s*[:：]\s*/,'').replace(/^["“'‘]+|["”'’]+\s*$/g,'').trim();
+}
+async function chat(messages,onDelta,opts={}){
+  if(!aiReady())throw new Error('AI를 아직 준비하고 있어요. 위쪽의 진행 상태를 확인해 주세요.');
+  ctrl=new AbortController();const st=state.settings;
+  const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl.signal,
+    body:JSON.stringify({model:st.model||SETUP.model,messages,temperature:opts.temperature??+st.temperature,max_tokens:+st.maxTokens,stream:true})});
+  if(!r.ok)throw new Error((await r.text()).slice(0,300));
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='',full='';
+  for(;;){
+    const {done,value}=await rd.read();if(done)break;
+    buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();
+    for(const line of lines){const t=line.trim();if(!t.startsWith('data:'))continue;const d=t.slice(5).trim();if(d==='[DONE]')continue;
+      let j;try{j=JSON.parse(d);}catch(e){continue;}
+      if(j.error)throw new Error('AI 오류: '+j.error);
+      const c=j.choices?.[0]?.delta?.content;if(c){full+=c;onDelta&&onDelta(clean(full));}}
+  }
+  return clean(full);
+}
+
+/* =================== 프롬프트 =================== */
+function sysPrompt(){return `당신은 대한민국 초등학교 ${state.grade}학년 담임교사의 학교생활기록부 작성을 돕는 보조자입니다. 아래 [작성 규정]은 ${RULES?RULES.title:'학교생활기록부 기재요령'}${state.office?`과 ${state.office} 지침`:''}에 따른 것이니 반드시 지키세요.\n[작성 규정]\n${rulesText()}\n\n결과 문장만 출력하고 설명, 제목, 머리말은 붙이지 마세요.`;}
+function obsText(s,ids){
+  const L=[];CATS.filter(c=>!ids||ids.includes(c.id)).forEach(c=>{
+    const p=s.checks.filter(k=>k.startsWith(c.id+'|pos|')).map(k=>k.split('|')[2]),n=s.checks.filter(k=>k.startsWith(c.id+'|neg|')).map(k=>k.split('|')[2]);
+    if(c.id==='talent'){if(p.length)L.push(`- 특기·관심 분야: ${p.join(', ')}`);return;}
+    if(p.length)L.push(`- ${c.label}(강점): ${p.join(', ')}`);if(n.length)L.push(`- ${c.label}(보완점): ${n.join(', ')}`);});
+  return L.length?L.join('\n'):'- (체크된 항목 없음)';
+}
+const idxOf=s=>S().indexOf(s);
+function hbMsgs(s,extra,others){
+  const hints=classHints(others);
+  return (a,avoid)=>[{role:'system',content:sysPrompt()},{role:'user',content:
+`[작성할 항목] 행동특성 및 종합의견
+[관찰 내용]
+${obsText(s)}
+${s.memo.trim()?`[교사 메모]\n${s.memo.trim()}\n`:''}[작성 방법] 1년 동안 관찰한 모습을 바탕으로 학생을 전체적으로 이해할 수 있게 종합합니다. 학습, 교우 관계, 인성·정서, 생활 습관을 고루 아우르되 장점을 중심으로 쓰고, 보완점은 성장 가능성과 함께 한 가지 이내로 담습니다.
+[서술 방식] ${OPEN_HB[(idxOf(s)+a*3)%OPEN_HB.length]}
+[분량] 공백 포함 약 ${state.settings.len.hb}자
+${uniqBlock(hints,avoid)}${extra?`\n[추가 요청] ${extra}`:''}`}];
+}
+function nuMsgs(s,item,extra,others){
+  const hints=classHints(others);
+  return (a,avoid)=>[{role:'system',content:sysPrompt()},{role:'user',content:
+`[작성할 항목] 행동특성 누가기록 (날짜별 관찰 기록)
+[이 날 관찰한 상황] ${item.memo.trim()}
+[학생의 평소 특성(배경 참고용)]
+${obsText(s)}
+[작성 방법] 이 날 관찰한 구체적 행동과 그 의미, 또는 교사의 지도와 학생의 변화를 객관적으로 기록합니다. 날짜는 본문에 쓰지 않습니다. 평소 특성은 배경으로만 참고하고 이 날의 상황을 중심으로 씁니다.
+[서술 방식] ${OPEN_NU[(idxOf(s)+a)%OPEN_NU.length]}
+[분량] 공백 포함 약 ${state.settings.len.nu}자
+${uniqBlock(hints,avoid)}${extra?`\n[추가 요청] ${extra}`:''}`}];
+}
+function assessFor(subj,period){return state.plan.assessments.filter(a=>a.subj===subj&&(period==='Y'||a.sem===period));}
+function gyoMsgs(s,subj,period,others){
+  const as=assessFor(subj,period),hints=classHints(others);
+  const lines=as.map(a=>{const lv=s.levels[a.id];return `- 단원: ${a.unit||'(미지정)'}\n  성취기준: ${a.std.map(c=>stdText(subj,c)||c).join(' / ')||'(미지정)'}\n  평가요소: ${a.element||'-'}\n  이 학생의 성취수준: ${lv||'미입력'}${lv&&a.inp[lv]?`\n  해당 수준 공통 기준 문장: ${a.inp[lv]}`:''}`;}).join('\n');
+  const memo=(s.gyoMemo[subj]||'').trim();
+  return (a,avoid)=>[{role:'system',content:sysPrompt()},{role:'user',content:
+`[작성할 항목] ${subj} 교과학습발달상황 (${PERIOD[period]})
+[수행평가 결과]
+${lines||'- (평가 계획 없음)'}
+[학습 관련 관찰]
+${obsText(s,['study','talent'])}
+${memo?`[${subj} 교과 관찰 메모] ${memo}\n`:''}[작성 방법] 성취기준에 따른 학생의 성취수준 특성을 문장으로 씁니다. 상·중·하 등급이나 성취기준 코드를 그대로 쓰지 말고, 수준에 맞는 구체적인 성취 모습으로 풀어 씁니다. 공통 기준 문장은 의미만 살리고 표현은 이 학생에 맞게 새로 씁니다. 수준이 '하'인 영역은 현재 도달 정도와 노력할 점, 성장 가능성을 함께 씁니다.
+[서술 방식] ${OPEN_GYO[(idxOf(s)+a*2)%OPEN_GYO.length]}
+[분량] 공백 포함 약 ${state.settings.len.gyo}자
+${uniqBlock(hints,avoid)}`}];
+}
+function refExcerpt(a){
+  if(a.ref&&a.ref.trim())return {file:'직접 붙여넣은 자료',how:'',text:a.ref.trim().slice(0,3500)};
+  const files=((REFS[a.subj]||{}).files||[]).filter(f=>f.text);if(!files.length)return null;
+  const unit=(a.unit||'').replace(/^[\d\s.()\-~]+/,'').trim();
+  for(const f of files){
+    let idx=-1,how='';
+    for(const c of a.std){const i=f.text.indexOf(c);if(i>=0){idx=i;how=`성취기준 ${c}`;break;}}
+    if(idx<0&&unit.length>=2){const i=f.text.indexOf(unit);if(i>=0){idx=i;how='단원명';}}
+    if(idx>=0){const st=Math.max(0,idx-300);return {file:f.name,how,text:f.text.slice(st,st+3200)};}
+  }
+  const small=files.filter(f=>f.chars<=3200);if(small.length===1)return {file:small[0].name,how:'파일 전체',text:small[0].text};
+  return null;
+}
+function critMsgs(a){
+  const ps=(state.plan.subjects[a.subj]||{}).publisher||'',ref=refExcerpt(a);
+  return [{role:'system',content:`당신은 대한민국 초등학교 교육과정과 과정 중심 평가에 능숙한 교사입니다. 2022 개정 교육과정 성취기준에 근거해 수행평가 계획과 평가기준을 만듭니다. 출판사·교사용 지도서 평가 자료가 있으면 그 내용을 최우선으로 반영합니다. 지정한 형식 외의 말은 쓰지 않습니다.`},
+  {role:'user',content:
+`초등학교 ${state.grade}학년 ${a.subj} 수행평가 (${PERIOD[a.sem]})
+[교과서 출판사] ${ps||'미입력'}
+[단원] ${a.unit||'미입력'}
+[성취기준]
+${a.std.map(c=>`${c} ${stdText(a.subj,c)}`).join('\n')||'미선택'}
+[평가 방법] ${a.method}
+[교사가 정한 평가요소] ${a.element||'없음(제안해 줄 것)'}
+[교사가 정한 평가 과제] ${a.task||'없음(제안해 줄 것)'}
+[출판사·지도서 평가 참고자료${ref?` (${ref.file})`:''}]
+${ref?ref.text:'없음'}
+
+아래 8줄 형식을 그대로 지켜 출력하세요.
+[평가요소] 성취기준에서 평가할 핵심 내용 한 줄
+[평가과제] 학생이 수행할 구체적인 과제 1~2문장
+[상] 상 수준 평가기준 (~할 수 있다.)
+[중] 중 수준 평가기준 (~할 수 있다.)
+[하] 하 수준 평가기준 (~할 수 있다.)
+[입력-상] 상 수준 학생의 교과학습발달상황 공통 기준 문장 (명사형 종결 ~함.)
+[입력-중] 중 수준 학생의 공통 기준 문장 (~함.)
+[입력-하] 하 수준 학생의 공통 기준 문장, 낙인 없이 노력할 점과 성장 가능성 포함 (~함.)`}];
+}
+function parseCrit(t){
+  const g=tag=>{const m=t.match(new RegExp('\\['+tag+'\\]\\s*([\\s\\S]*?)(?=\\n\\s*\\[|$)'));return m?m[1].trim():'';};
+  return {element:g('평가요소'),task:g('평가과제'),crit:{상:g('상'),중:g('중'),하:g('하')},inp:{상:g('입력-상'),중:g('입력-중'),하:g('입력-하')}};
+}
+
+/* =================== 평가기준 파일 =================== */
+async function loadRefs(subj,force){
+  if(!subj)return;
+  if(REFS[subj]&&!force&&Date.now()-REFS[subj].t<15000)return;
+  try{const r=await getJSON('/api/refs?subj='+encodeURIComponent(subj));REFS[subj]={...r,t:Date.now()};
+    const pdfs=r.files.filter(f=>f.needsBrowser);
+    if(pdfs.length){for(const f of pdfs)await pdfToText(subj,f.name);const r2=await getJSON('/api/refs?subj='+encodeURIComponent(subj));REFS[subj]={...r2,t:Date.now()};}
+  }catch(e){REFS[subj]={files:[],dir:'',t:Date.now(),error:e.message};}
+  if(state.tab==='plan')render();
+}
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('인터넷 연결이 필요해요'));document.head.appendChild(s);});}
+async function pdfToText(subj,name){
+  const CDN='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  try{
+    if(!window.pdfjsLib){await loadScript(CDN+'pdf.min.js');pdfjsLib.GlobalWorkerOptions.workerSrc=CDN+'pdf.worker.min.js';}
+    const q=`subj=${encodeURIComponent(subj)}&name=${encodeURIComponent(name)}`;
+    const buf=await (await fetch('/api/refs/raw?'+q)).arrayBuffer();
+    const doc=await pdfjsLib.getDocument({data:buf,cMapUrl:CDN+'cmaps/',cMapPacked:true}).promise;
+    let out='';for(let p=1;p<=doc.numPages;p++){const tc=await (await doc.getPage(p)).getTextContent();out+=tc.items.map(i=>i.str+(i.hasEOL?'\n':'')).join('')+'\n\n';}
+    await fetch('/api/refs/text?'+q,{method:'POST',body:out});
+  }catch(e){toast(`PDF(${name})를 읽지 못했어요: ${e.message}`);}
+}
+async function uploadFiles(subj,files){
+  for(const f of files){prog(`올리는 중: ${f.name}`);
+    const r=await fetch(`/api/refs/upload?subj=${encodeURIComponent(subj)}&name=${encodeURIComponent(f.name)}`,{method:'POST',body:f});
+    if(!r.ok)toast(`${f.name}을(를) 넣지 못했어요`);}
+  prog('');await loadRefs(subj,true);toast('파일을 넣었어요. 자동으로 반영돼요.');
+}
+
+/* =================== 실행 래퍼 =================== */
+async function run(fn){
+  if(busy)return;busy=true;stopFlag=false;document.body.classList.add('busy');
+  try{await fn();}catch(e){if(e.name!=='AbortError')alert(e.message);}
+  busy=false;document.body.classList.remove('busy');render();
+}
+function prog(t){const p=$('prog');if(p)p.textContent=t;}
+function stop(){stopFlag=true;ctrl&&ctrl.abort();}
+
+/* =================== 화면 공통 =================== */
+const TABS=[['home','처음 화면',0],['roster','학생 명단',1],['obs','행동 관찰',2],['plan','평가 계획',3],['grade','성적 입력',4],['gyo','교과 발달',5],['result','검사·내보내기',6],['set','설정',0]];
+function render(){
+  if(!state.office){$('tabs').innerHTML='';$('view').innerHTML=vWelcome();return;}
+  $('tabs').innerHTML=TABS.map(([k,l,n])=>`<button data-act="tab" data-v="${k}" class="${state.tab===k?'on':''}">${n?`<span class="num">${n}</span>`:''}${l}</button>`).join('');
+  const v={home:vHome,roster:vRoster,obs:vObs,plan:vPlan,grade:vGrade,gyo:vGyo,result:vResult,set:vSet}[state.tab]||vHome;
+  $('view').innerHTML=v();setStatus();
+  if(state.tab==='plan')loadRefs(fixSubj('planSubj'));
+}
+function head(n,title,desc){return `<div class="stephead"><span class="num big">${n}</span><div><h2>${title}</h2><p>${desc}</p></div></div>`;}
+function nextbar(n){
+  const prev=STEPS[n-2],next=STEPS[n];
+  return `<div class="nextbar">${prev?`<button data-act="tab" data-v="${prev.tab}">← ${'①②③④⑤⑥'[prev.n-1]} ${prev.title}</button>`:'<span></span>'}${next?`<button class="primary" data-act="tab" data-v="${next.tab}">다음: ${'①②③④⑤⑥'[next.n-1]} ${next.title} →</button>`:''}</div>`;
+}
+
+/* ---- 처음 실행: 교육청 선택 ---- */
+function vWelcome(){
+  return `<div class="welcome panel"><h2 style="margin-top:0">반가워요! 먼저 두 가지만 골라 주세요</h2>
+  <label class="f">1. 소속 교육청 (해당 교육청 기재요령이 적용돼요)</label>
+  <div class="offices">${OFFICES.map(o=>`<button data-act="pickOffice" data-v="${o}" class="${state.office===o||state._pick===o?'on':''}">${o}</button>`).join('')}</div>
+  <label class="f">2. 담당 학년</label>
+  <div class="row">${[1,2,3,4,5,6].map(g=>`<button data-act="pickGrade" data-v="${g}" class="${String(state.grade)===String(g)?'primary':''}">${g}학년</button>`).join('')}</div>
+  <div class="row" style="justify-content:flex-end;margin-top:20px"><button class="primary" data-act="welcomeDone" style="padding:12px 24px;font-size:16px">시작하기 →</button></div>
+  <div class="panel" style="margin-top:20px" id="setupBox">${setupHtml()}</div></div>`;
+}
+
+/* ---- 처음 화면 ---- */
+function stepStatus(){
+  const L=S(),n=L.length,as=state.plan.assessments;
+  const cells=L.length*as.length,filled=L.reduce((k,s)=>k+as.filter(a=>s.levels[a.id]).length,0);
+  const gyoCnt=L.reduce((k,s)=>k+Object.values(s.gyo).filter(g=>g.text).length,0);
+  const hb=L.filter(s=>s.hb&&s.hb.text).length,ck=L.filter(s=>s.checks.length||s.memo.trim()).length;
+  return [
+    {done:n>0,txt:n?`${n}명 등록`:'아직 없음'},
+    {done:n>0&&hb===n,txt:`관찰 체크 ${ck}/${n}명 · 행발 ${hb}/${n}명`},
+    {done:as.length>0&&as.every(a=>a.locked),txt:as.length?`수행평가 ${as.length}개 (확정 ${as.filter(a=>a.locked).length})`:'아직 없음'},
+    {done:cells>0&&filled===cells,txt:cells?`${filled}/${cells}칸 입력`:'평가 계획을 먼저 만들어요'},
+    {done:gyoCnt>0,txt:`교과 문장 ${gyoCnt}개`},
+    {done:!!state.lastExport,txt:state.lastExport?`마지막 내보내기 ${state.lastExport}`:'아직 안 함'},
+  ];
+}
+function vHome(){
+  const st=stepStatus(),next=st.findIndex(x=>!x.done);
+  return `<div class="panel" id="setupBox">${setupHtml()}</div>
+  <h2 style="margin:6px 0 4px">이 순서대로 하면 돼요</h2><p class="hint" style="margin-bottom:14px">${esc(state.office)} · ${state.grade}학년 · ${esc(RULES?RULES.title:'')} 적용 중</p>
+  <div class="steps">${STEPS.map((s,i)=>`<div class="step ${i===next?'next':''}" data-act="tab" data-v="${s.tab}"><span class="num big ${st[i].done?'done':''}">${st[i].done?'✓':s.n}</span><div><h4>${'①②③④⑤⑥'[i]} ${s.title}${i===next?'<span class="tag">지금 할 차례</span>':''}</h4><p>${s.desc}</p><div class="st" style="color:${st[i].done?'#2fa36b':'var(--muted)'}">${st[i].txt}</div></div></div>`).join('')}</div>`;
+}
+
+/* ---- ① 학생 명단 ---- */
+function vRoster(){
+  const L=S();
+  return head(1,'학생 명단','학생 수를 입력하고 [적용]을 누르면 1번부터 자동으로 만들어져요. 이름은 표의 칸에 바로 입력하세요. (이름은 AI에게 보내지 않아요)')+
+  `<section class="panel"><div class="row"><span style="font-weight:700">학생 수</span><input id="cntIn" type="number" min="1" max="60" style="width:100px;font-size:17px" value="${L.length||''}" placeholder="예: 25"><span>명</span>
+  <button class="primary" data-act="setCount">적용</button><button data-act="pasteNames">이름 한꺼번에 붙여넣기</button></div>
+  ${L.length?`<div class="scroll" style="margin-top:12px"><table class="tbl"><thead><tr><th style="width:60px">번호</th><th style="width:35%">이름</th><th>관찰 체크</th><th>행발</th><th>교과 문장</th></tr></thead><tbody>
+  ${L.map(s=>`<tr><td>${s.no}</td><td><input data-bind="name" data-id="${s.id}" value="${esc(s.name)}" placeholder="${s.no}번 학생 이름" style="width:100%"></td><td>${s.checks.length}개</td><td>${s.hb&&s.hb.text?'<span class="badge done">작성</span>':'-'}</td><td>${Object.values(s.gyo).filter(g=>g.text).length}개</td></tr>`).join('')}
+  </tbody></table></div>`:'<div class="empty">학생 수를 입력하고 적용을 누르세요.</div>'}</section>`+nextbar(1);
+}
+
+/* ---- ② 행동 관찰 · 행발 ---- */
+function vObs(){
+  const L=S(),s=curS();
+  const h=head(2,'행동 관찰 · 행발','왼쪽에서 학생을 고르고 해당하는 특성을 눌러 체크하세요. 메모를 한 줄이라도 쓰면 훨씬 개별화된 문장이 나와요.');
+  if(!L.length)return h+`<div class="panel empty">먼저 ① 학생 명단에서 학생 수를 입력하세요.</div>`+nextbar(2);
+  if(!s){state.cur=L[0].id;return vObs();}
+  const list=`<section class="panel"><h3>학생</h3><div class="slist">${L.map(x=>`<div class="stu ${x.id===state.cur?'on':''}" data-act="pick" data-id="${x.id}"><span class="no">${x.no}</span><span class="nm">${esc(dname(x))}</span><span class="badge">${x.checks.length}</span>${x.hb&&x.hb.text?'<span class="badge done">행</span>':''}</div>`).join('')}</div></section>`;
+  const cats=CATS.map(c=>`<div class="cat"><h4>${c.label}</h4>${chipRow(s,c,'pos',c.pos,c.neg.length?'강점':'')}${chipRow(s,c,'neg',c.neg,'보완이 필요한 점')}</div>`).join('');
+  const mid=`<section class="panel"><h3>${s.no}번 ${esc(dname(s))} <small>초록=강점 · 붉은색=보완점</small><span class="sp"></span><button class="ghost sm" data-act="clearChecks">초기화</button></h3>${cats}
+   <label class="f">교사 관찰 메모</label><textarea data-bind="memo" rows="4" placeholder="예) 학급 회의에서 급식 순서 규칙을 제안해 반 전체가 따르게 됨.">${esc(s.memo)}</textarea>
+   <div class="row" style="margin-top:8px;justify-content:flex-end"><button data-act="nextStu">다음 학생 →</button></div></section>`;
+  const mode=state.ui.obsMode;
+  let right=`<section class="panel"><h3>문장 만들기<span class="sp"></span><select data-bind="obsMode"><option value="hb" ${mode==='hb'?'selected':''}>행동특성 및 종합의견</option><option value="nu" ${mode==='nu'?'selected':''}>행동 누가기록</option></select></h3>
+   <label class="f">추가 요청 (선택)</label><input id="extraReq" style="width:100%" placeholder="예) 리더십을 더 강조 / 더 담백하게">`;
+  if(mode==='hb'){
+    const t=s.hb?s.hb.text:'',d=t?sameSentences(t,hbOthers(s)):[];
+    right+=`<div class="row" style="margin-top:10px"><button class="primary gen" data-act="genHb">${t?'다시 만들기':'만들기'}</button><button class="gen" data-act="bulkHb">학급 전체 한 번에</button><button class="stopBtn" data-act="stop">중지</button></div>
+    <div id="prog" class="prog"></div>
+    <textarea id="hbOut" data-bind="hbText" rows="9">${esc(t)}</textarea><div id="hbMeta">${metaHtml(t,state.settings.len.hb,s,d,s.hb&&s.hb.flag)}</div>`;
+  }else{
+    right+=`<div class="row" style="margin-top:10px"><input type="date" id="nuDate" value="${today()}"></div>
+    <label class="f">이 날 있었던 일</label><textarea id="nuMemo" rows="2" placeholder="예) 체육 시간 피구 중 넘어진 친구를 부축해 보건실에 데려감"></textarea>
+    <div class="row" style="margin-top:8px"><button class="primary gen" data-act="genNu">누가기록 만들기</button><button class="stopBtn" data-act="stop">중지</button></div>
+    <div id="prog" class="prog"></div><div id="nuLive"></div>
+    ${[...s.nu].sort((a,b)=>b.date.localeCompare(a.date)).map(n=>`<div class="acard"><div class="head"><b>${n.date}</b><span class="hint" style="margin:0">${esc(n.memo)}</span><span class="sp"></span><button class="ghost sm" data-act="delNu" data-nid="${n.id}">삭제</button></div>
+      <textarea data-bind="nuText" data-nid="${n.id}" rows="3">${esc(n.text)}</textarea><div id="nm_${n.id}">${metaHtml(n.text,state.settings.len.nu,s,sameSentences(n.text,nuOthers(n.id)),n.flag)}</div></div>`).join('')||'<div class="empty">아직 누가기록이 없어요.</div>'}`;
+  }
+  right+='</section>';
+  return h+`<div class="grid3">${list}${mid}${right}</div>`+nextbar(2);
+}
+function chipRow(s,c,pol,arr,sub){
+  if(!arr.length)return '';
+  return (sub?`<div class="sub">${sub}</div>`:'')+`<div class="chips">${arr.map(t=>{const k=`${c.id}|${pol}|${t}`;return `<span class="chip ${pol} ${s.checks.includes(k)?'on':''}" data-act="chip" data-k="${esc(k)}">${t}</span>`;}).join('')}</div>`;
+}
+const hbOthers=s=>state.students.filter(x=>x.id!==s.id&&x.hb&&x.hb.text).map(x=>({name:dname(x),text:x.hb.text}));
+const nuOthers=nid=>state.students.flatMap(x=>x.nu.filter(n=>n.id!==nid&&n.text).map(n=>({name:`${dname(x)}(${n.date})`,text:n.text})));
+const gyoKey=(subj,p)=>`${subj}|${p}`;
+const gyoOthers=(s,key)=>state.students.filter(x=>x.id!==s.id&&x.gyo[key]&&x.gyo[key].text).map(x=>({name:dname(x),text:x.gyo[key].text}));
+
+/* ---- ③ 평가 계획 ---- */
+function vPlan(){
+  const subj=fixSubj('planSubj'),sem=state.ui.planSem;
+  const ps=psOf(subj),units=(ps.units[sem]||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const as=state.plan.assessments.filter(a=>a.subj===subj&&a.sem===sem),stds=stdList(subj);
+  const custom=ps.publisher&&!PUBLISHERS.includes(ps.publisher);
+  const R=REFS[subj];
+  return head(3,'평가 계획','학기와 교과를 고르고 → 단원을 적고 → [+ 수행평가 추가]로 성취기준을 고른 뒤 [AI로 평가기준 만들기] → 확인 후 [확정]. 확정한 기준은 모든 학생에게 똑같이 적용돼요.')+
+  `<section class="panel"><div class="row">
+   <select data-bind="planSem" style="font-weight:700">${['1','2'].map(k=>`<option value="${k}" ${sem===k?'selected':''}>${PERIOD[k]}</option>`).join('')}</select>
+   <select data-bind="planSubj" style="font-weight:700">${subjects().map(x=>`<option ${x===subj?'selected':''}>${x}</option>`).join('')}</select>
+   <span style="margin-left:10px">교과서 출판사</span>
+   <select data-bind="pubSel"><option value="">선택하세요</option>${PUBLISHERS.map(p=>`<option ${p===ps.publisher?'selected':''}>${p}</option>`).join('')}<option value="__custom" ${custom?'selected':''}>직접 입력…</option></select>
+   ${custom||state.ui.pubCustom?`<input data-bind="pubText" value="${esc(ps.publisher)}" placeholder="출판사 이름" style="width:150px">`:''}
+   ${ps.publisher?`<button class="ghost sm" data-act="pubClear">지우기</button>`:''}</div>
+   <div class="grid2" style="margin-top:12px">
+    <div><label class="f">${PERIOD[sem]} ${subj} 단원 목록 (한 줄에 하나)</label><textarea data-bind="units" rows="7" placeholder="1. 분수의 나눗셈\n2. 각기둥과 각뿔">${esc(ps.units[sem]||'')}</textarea>
+     <p class="hint">성취기준: ${stds.length}개 사용 가능 (2022 개정, ${band()}학년군)</p></div>
+    <div><label class="f">평가기준 파일 (교사용 지도서·출판사 평가자료)</label>
+     <div class="drop" id="dropZone" data-subj="${esc(subj)}">📂 여기로 파일을 끌어다 놓으세요<br><span style="font-size:12px">한글(hwp·hwpx), 워드, 엑셀, 파워포인트, PDF, 텍스트</span></div>
+     <p class="hint">또는 이 폴더에 직접 넣어도 돼요: <span class="path">${esc(R&&R.dir?R.dir:(INFO?INFO.refsDir+'\\'+subj:''))}</span> <button class="sm" data-act="openRefs" data-v="${esc(subj)}">폴더 열기</button> <button class="sm ghost" data-act="reloadRefs">새로고침</button></p>
+     <div class="files">${R?(R.files.length?R.files.map(f=>`<div class="file"><span class="nm" title="${esc(f.name)}">📄 ${esc(f.name)}</span>${f.error?`<span class="badge bad">${esc(f.error)}</span>`:f.needsBrowser?'<span class="badge">읽는 중</span>':`<span class="badge done">읽음 ${f.chars.toLocaleString()}자</span>`}<button class="ghost sm" data-act="delRef" data-v="${esc(f.name)}">빼기</button></div>`).join(''):'<div class="hint">아직 넣은 파일이 없어요. 파일이 없어도 성취기준만으로 평가기준을 만들 수 있어요.</div>'):'<div class="hint">불러오는 중…</div>'}</div>
+    </div></div><div id="prog" class="prog"></div></section>
+   ${as.map(a=>aCard(a,units,stds)).join('')}
+   <div class="row"><button class="primary" data-act="addA">+ 수행평가 추가</button><span class="hint">단원별로 수행평가를 하나씩 추가하세요.</span><button class="stopBtn" data-act="stop">중지</button></div>`+nextbar(3);
+}
+function aCard(a,units,stds){
+  const L=a.locked?'disabled':'',ref=refExcerpt(a);
+  const lv=k=>`<div><div class="t">${k}</div><textarea rows="3" data-bind="af" data-aid="${a.id}" data-f="crit.${k}" ${L} placeholder="${k} 수준 평가기준">${esc(a.crit[k])}</textarea></div>`;
+  const inp=k=>`<div><div class="t">${k} 수준 입력 문장</div><textarea rows="3" data-bind="af" data-aid="${a.id}" data-f="inp.${k}" ${L} placeholder="${k} 수준 학생 공통 기준 문장 (~함.)">${esc(a.inp[k])}</textarea></div>`;
+  return `<section class="acard ${a.locked?'locked':''}"><div class="head">
+   <select data-bind="af" data-aid="${a.id}" data-f="unit" ${L}><option value="">단원 선택</option>${[...new Set([...units,a.unit].filter(Boolean))].map(u=>`<option ${u===a.unit?'selected':''}>${esc(u)}</option>`).join('')}</select>
+   <select data-bind="af" data-aid="${a.id}" data-f="method" ${L}>${METHODS.map(m=>`<option ${m===a.method?'selected':''}>${m}</option>`).join('')}</select>
+   ${a.locked?'<span class="badge done">확정됨 · 모든 학생 공통</span>':'<span class="badge">작성 중</span>'}<span class="sp"></span>
+   ${a.locked?'':`<button class="gen primary sm" data-act="genCrit" data-aid="${a.id}">AI로 평가기준 만들기</button>`}
+   <button class="sm" data-act="lockA" data-aid="${a.id}">${a.locked?'확정 해제':'확정'}</button>
+   <button class="ghost sm" data-act="delA" data-aid="${a.id}">삭제</button></div>
+   <label class="f">성취기준 (${a.std.length}개 선택)</label>
+   <div class="stdbox">${stds.map(([c,t])=>`<label><input type="checkbox" data-bind="astd" data-aid="${a.id}" data-c="${c}" ${a.std.includes(c)?'checked':''} ${L}><span><b>[${c}]</b> ${esc(t)}</span></label>`).join('')}</div>
+   <div class="grid2"><div><label class="f">평가요소 (평가 내용)</label><input style="width:100%" data-bind="af" data-aid="${a.id}" data-f="element" value="${esc(a.element)}" ${L}></div>
+   <div><label class="f">평가 과제</label><input style="width:100%" data-bind="af" data-aid="${a.id}" data-f="task" value="${esc(a.task)}" ${L}></div></div>
+   <div class="hint">📎 평가기준 파일 반영: ${ref?`<b>${esc(ref.file)}</b>${ref.how?` (${esc(ref.how)}로 찾음)`:''} <details style="display:inline"><summary>찾은 내용 보기</summary><pre>${esc(ref.text.slice(0,1500))}…</pre></details>`:'해당 단원을 파일에서 찾지 못했어요 → 성취기준만으로 만들어요'}</div>
+   ${a.locked?'':`<details ${a.ref?'open':''}><summary>자료를 직접 붙여넣기 (선택 · 붙여넣으면 파일보다 우선)</summary><textarea rows="4" data-bind="af" data-aid="${a.id}" data-f="ref">${esc(a.ref)}</textarea></details>`}
+   <label class="f">평가기준</label><div class="lv3">${lv('상')}${lv('중')}${lv('하')}</div>
+   <label class="f">성취수준별 입력 문장 (⑤ 교과 발달상황의 공통 근거)</label><div class="lv3">${inp('상')}${inp('중')}${inp('하')}</div>
+   <div class="prog" id="cp_${a.id}"></div></section>`;
+}
+function psOf(subj){return state.plan.subjects[subj]=state.plan.subjects[subj]||{publisher:'',units:{'1':'','2':''}};}
+
+/* ---- ④ 성적 입력 ---- */
+function vGrade(){
+  const subj=fixSubj('gradeSubj'),sem=state.ui.gradeSem,L=S(),as=state.plan.assessments.filter(a=>a.subj===subj&&a.sem===sem);
+  const h=head(4,'성적 입력','교과와 학기를 고르고, 학생마다 상·중·하를 누르세요. 다시 누르면 지워져요.');
+  const sel=`<div class="row"><select data-bind="gradeSem">${['1','2'].map(k=>`<option value="${k}" ${sem===k?'selected':''}>${PERIOD[k]}</option>`).join('')}</select><select data-bind="gradeSubj">${subjects().map(x=>`<option ${x===subj?'selected':''}>${x}</option>`).join('')}</select></div>`;
+  if(!as.length)return h+`<section class="panel">${sel}<div class="empty">이 교과·학기에 수행평가가 없어요. ③ 평가 계획에서 먼저 추가하세요.</div></section>`+nextbar(4);
+  const miss=L.reduce((n,s)=>n+as.filter(a=>!s.levels[a.id]).length,0);
+  return h+`<section class="panel">${sel}<p class="hint">미입력 ${miss}칸</p>
+   <div class="scroll"><table class="tbl"><thead><tr><th>번호</th><th>이름</th>${as.map(a=>`<th>${esc(a.unit||'단원 미지정')}<br><span style="font-weight:400">${esc(a.element||a.method)}</span><br><button class="ghost sm" data-act="fillCol" data-aid="${a.id}">빈칸 모두 '중'</button></th>`).join('')}</tr></thead>
+   <tbody>${L.map(s=>`<tr><td>${s.no}</td><td>${esc(dname(s))}</td>${as.map(a=>`<td><span class="seg">${['상','중','하'].map(v=>`<button class="${v} ${s.levels[a.id]===v?'on':''}" data-act="lvl" data-id="${s.id}" data-aid="${a.id}" data-v="${v}">${v}</button>`).join('')}</span></td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`+nextbar(4);
+}
+
+/* ---- ⑤ 교과 발달상황 ---- */
+function vGyo(){
+  const subj=fixSubj('gyoSubj'),p=state.ui.gyoPeriod,key=gyoKey(subj,p),L=S(),as=assessFor(subj,p);
+  const unlocked=as.filter(a=>!a.locked).length;
+  return head(5,'교과 발달상황','교과와 기간을 고르고 [미작성 학생 모두 만들기]를 누르세요. 다른 학생과 똑같은 문장이 생기면 자동으로 다시 써요.')+
+  `<section class="panel"><div class="row"><select data-bind="gyoSubj">${subjects().map(x=>`<option ${x===subj?'selected':''}>${x}</option>`).join('')}</select>
+   <select data-bind="gyoPeriod">${Object.entries(PERIOD).map(([k,v])=>`<option value="${k}" ${p===k?'selected':''}>${v}</option>`).join('')}</select>
+   <button class="primary gen" data-act="bulkGyo" data-v="missing">미작성 학생 모두 만들기</button><button class="gen" data-act="bulkGyo" data-v="all">전체 다시 만들기</button><button class="stopBtn" data-act="stop">중지</button></div>
+   <div id="prog" class="prog"></div>
+   ${!as.length?'<div class="warn">이 교과·기간에 수행평가 계획이 없어요. 관찰 내용만으로 작성돼요.</div>':''}
+   ${unlocked?`<div class="warn">확정되지 않은 수행평가가 ${unlocked}개 있어요. ③ 평가 계획에서 확정하면 모든 학생에게 같은 기준이 적용돼요.</div>`:''}
+   <div class="scroll" style="margin-top:10px"><table class="tbl"><thead><tr><th style="width:150px">학생</th><th>문장</th><th style="width:70px"></th></tr></thead><tbody>
+   ${L.map(s=>{const g=s.gyo[key]||{};const lv=as.map(a=>`${a.unit||a.element||'평가'}:${s.levels[a.id]||'-'}`).join(' · ');
+     return `<tr><td><b>${s.no}. ${esc(dname(s))}</b><div class="lvsum">${esc(lv)}</div><input data-bind="gyoMemo" data-id="${s.id}" placeholder="${subj} 메모(선택)" value="${esc(s.gyoMemo[subj]||'')}" style="margin-top:4px;font-size:12px;width:100%"></td>
+     <td><textarea id="g_${s.id}" data-bind="gyoText" data-id="${s.id}" rows="4">${esc(g.text||'')}</textarea><div id="gm_${s.id}">${g.text?metaHtml(g.text,state.settings.len.gyo,s,sameSentences(g.text,gyoOthers(s,key)),g.flag):''}</div></td>
+     <td><button class="gen sm" data-act="genGyo" data-id="${s.id}">${g.text?'다시':'만들기'}</button></td></tr>`;}).join('')}
+   </tbody></table></div></section>`+nextbar(5);
+}
+
+/* ---- ⑥ 검사 · 내보내기 ---- */
+function vResult(){
+  const L=S(),rep=dupReport(),keys=[...new Set(L.flatMap(s=>Object.keys(s.gyo).filter(k=>s.gyo[k].text)))].sort();
+  return head(6,'검사 · 내보내기','같은 반 학생끼리 똑같은 문장이 없는지 검사한 뒤 엑셀(CSV)로 내보내요. 똑같은 문장이 있으면 내보낼 수 없어요.')+
+  `<section class="panel"><h3>같은 문장 검사</h3>${rep.length?`<div class="dup">⛔ 똑같은 문장 ${rep.length}개가 있어요.</div><div style="margin:8px 0">${rep.slice(0,30).map(r=>`<div class="hint">· [${esc(r.cat)}] ${esc(r.item.owner)} ↔ ${esc(r.who)}: ${esc(r.s)}</div>`).join('')}</div>
+   <div class="row"><button class="primary gen" data-act="autoFix">AI로 자동 고치기</button><button class="stopBtn" data-act="stop">중지</button><span class="hint">직접 고쳐도 돼요.</span></div><div id="prog" class="prog"></div>`
+   :'<div class="badge done" style="font-size:14px;padding:6px 12px">✔ 모든 항목에서 똑같은 문장이 없어요</div>'}</section>
+   <section class="panel"><h3>내보내기</h3><div class="row"><button class="primary" data-act="csvAll" ${rep.length?'disabled':''}>행발·교과 CSV</button><button data-act="csvNu" ${rep.length?'disabled':''}>누가기록 CSV</button><button data-act="csvPlan">평가계획 CSV</button></div>
+   <p class="hint">CSV는 엑셀에서 바로 열려요.</p></section>
+   <section class="panel"><h3>백업</h3><p class="hint">하루에 한 번 자동으로 백업돼요: <span class="path">${esc(INFO?INFO.backupDir:'')}</span></p>
+   <div class="row"><button data-act="backup">지금 백업</button><button data-act="openBackup">백업 폴더 열기</button><button data-act="restore">백업 불러오기</button><input type="file" id="fileRestore" accept=".json" style="display:none"></div></section>
+   <section class="panel"><h3>현황</h3><div class="scroll"><table class="tbl"><thead><tr><th>번호</th><th>이름</th><th>행발</th>${keys.map(k=>{const [a,b]=k.split('|');return `<th>${a} ${PERIOD[b]}</th>`;}).join('')}<th>누가기록</th></tr></thead>
+   <tbody>${L.map(s=>`<tr><td>${s.no}</td><td>${esc(dname(s))}</td><td>${s.hb&&s.hb.text?lenOf(s.hb.text)+'자':'-'}</td>${keys.map(k=>`<td>${s.gyo[k]&&s.gyo[k].text?lenOf(s.gyo[k].text)+'자':'-'}</td>`).join('')}<td>${s.nu.length}건</td></tr>`).join('')}</tbody></table></div></section>`+nextbar(6);
+}
+
+/* ---- 설정 ---- */
+function vSet(){
+  const st=state.settings,cs=state.ui.stdSubj||subjects()[0],u=(INFO&&INFO.update)||{};
+  return `<div class="stephead"><span class="num big" style="background:var(--muted)">⚙</span><div><h2>설정</h2><p>대부분 그대로 두면 돼요.</p></div></div>
+  <div class="grid2"><section class="panel"><h3>소속 · 학년</h3>
+   <div class="row"><select data-bind="office">${OFFICES.map(o=>`<option ${o===state.office?'selected':''}>${o}</option>`).join('')}</select>
+   <select data-bind="grade">${[1,2,3,4,5,6].map(g=>`<option value="${g}" ${String(g)===String(state.grade)?'selected':''}>${g}학년</option>`).join('')}</select></div>
+   <h3 style="margin-top:18px">기재요령 (자동 업데이트)</h3>
+   <p class="hint">적용 중: <b>${esc(RULES?RULES.title:'')}</b> (${esc(RULES?RULES.publisher:'')}, 버전 ${esc(RULES?RULES.version:'')})<br>
+   ${esc(state.office)} 추가 지침: ${officeRules().rules.length?officeRules().rules.length+'건':'없음'}${officeRules().note?' · '+esc(officeRules().note):''}<br>
+   성취기준: ${esc(STD?STD.title:'')} (버전 ${esc(STD?STD.version:'')})<br>
+   자동 업데이트: ${u.enabled?`켜짐 · 마지막 확인 ${esc(u.lastCheck||'확인 중')}${u.lastError?' · '+esc(u.lastError):''}`:'업데이트 주소가 설정되지 않은 판이에요'}</p>
+   <details><summary>적용 중인 작성 규정 전체 보기</summary><pre>${esc(rulesText())}</pre></details>
+   <label class="f">우리 학교 자체 지침 (선택, 한 줄에 하나)</label><textarea data-bind="schoolRules" rows="3" placeholder="예) 문장 끝은 '~함.'으로 통일">${esc(st.schoolRules)}</textarea>
+   <h3 style="margin-top:18px">분량 · 같은 문장 기준</h3>
+   <div class="row"><div><label class="f">행발 목표(자)</label><input type="number" style="width:90px" data-bind="len" data-k="hb" value="${st.len.hb}"></div><div><label class="f">누가기록</label><input type="number" style="width:90px" data-bind="len" data-k="nu" value="${st.len.nu}"></div><div><label class="f">교과</label><input type="number" style="width:90px" data-bind="len" data-k="gyo" value="${st.len.gyo}"></div></div>
+   <p class="hint">똑같은 문장은 항상 금지돼요. 아래는 '전체적으로 비슷한 정도'의 허용 기준이에요(높을수록 너그러움).</p>
+   <div class="row"><div><label class="f">비슷함 허용</label><input type="number" step="0.05" min="0.3" max="0.95" style="width:90px" data-bind="set" data-k="docSim" value="${st.docSim}"></div><div><label class="f">다시 쓰기 횟수</label><input type="number" min="1" max="8" style="width:90px" data-bind="set" data-k="retries" value="${st.retries}"></div></div>
+  </section>
+  <section class="panel"><h3>AI</h3><div id="setupBox">${setupHtml()}</div>
+   <p class="hint">기본 모델: Gemma 4 E2B (Q4_K_M) · 이 PC 안에서만 작동해요.</p>
+   <div class="row"><div><label class="f">창의성</label><input type="number" step="0.1" min="0" max="1.5" style="width:80px" data-bind="set" data-k="temperature" value="${st.temperature}"></div><div><label class="f">최대 길이(토큰)</label><input type="number" step="100" style="width:100px" data-bind="set" data-k="maxTokens" value="${st.maxTokens}"></div></div>
+   <details><summary>고급: 다른 AI 서버 사용(LM Studio 등)</summary><label class="f">서버 주소 (비우면 기본 Ollama)</label><input id="llmBase" style="width:100%" value="${esc(INFO&&INFO.llmBase||'')}" placeholder="http://127.0.0.1:1234/v1"><label class="f">모델 이름</label><input id="llmModel" style="width:100%" value="${esc(INFO&&INFO.llmBase?INFO.model:'')}" placeholder="LM Studio에서 불러온 모델 이름"><div class="row" style="margin-top:6px"><button data-act="saveLLM">적용</button></div></details>
+   <h3 style="margin-top:18px">성취기준 추가 (선택)</h3>
+   <p class="hint">2022 개정 전 교과 성취기준이 이미 들어 있어요. 학교자율시간 등 추가할 것만 넣으세요.</p>
+   <div class="row"><select data-bind="stdSubj">${subjects().map(x=>`<option ${x===cs?'selected':''}>${x}</option>`).join('')}</select><span class="hint">추가 ${(state.customStd[cs]||[]).length}개</span></div>
+   <textarea id="stdPaste" rows="3" placeholder="[6국07-01] 성취기준 내용… (한 줄에 하나)"></textarea>
+   <div class="row"><button data-act="addStd">추가</button><button class="ghost sm" data-act="clearStd">추가한 것 지우기</button></div>
+   <h3 style="margin-top:18px">데이터</h3><p class="hint">모든 내용은 이 PC에만 저장돼요. 폴더: <span class="path">${esc(INFO?INFO.docsDir:'')}</span></p>
+   <div class="row"><button data-act="openDocs">폴더 열기</button><button class="ghost" data-act="wipe">모든 데이터 지우기</button></div>
+   <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 1.0.0</p></section></div>`;
+}
+
+/* =================== 이벤트 =================== */
+const ACT={
+  tab:el=>{if(!state.office)return;state.tab=el.dataset.v;save();render();window.scrollTo(0,0);},
+  stop,
+  retrySetup:async()=>{await fetch('/api/setup',{method:'POST'});SETUP=null;setTimeout(pollSetup,500);},
+  pickOffice:el=>{state._pick=el.dataset.v;render();},
+  pickGrade:el=>{state.grade=el.dataset.v;render();},
+  welcomeDone:()=>{if(!state._pick){alert('교육청을 골라 주세요.');return;}state.office=state._pick;delete state._pick;state.tab='home';save();render();},
+  setCount:()=>{
+    const n=Math.max(0,Math.min(60,parseInt($('cntIn').value)||0)),L=S();
+    if(n>L.length){const base=L.length?L[L.length-1].no:0;for(let i=1;i<=n-L.length;i++)state.students.push(newStudent(base+i));}
+    else if(n<L.length){const rm=L.slice(n),has=rm.filter(s=>s.checks.length||s.memo||s.hb||s.nu.length||Object.keys(s.gyo).length||Object.keys(s.levels).length);
+      if(!confirm(`${rm[0].no}번부터 ${rm.length}명을 삭제할까요?${has.length?`\n이 중 ${has.length}명은 입력한 내용이 있어요.`:''}`))return;
+      const ids=new Set(rm.map(s=>s.id));state.students=state.students.filter(s=>!ids.has(s.id));}
+    if(!curS())state.cur=S()[0]?.id||null;save();render();toast(`${n}명`);
+  },
+  pasteNames:()=>{const d=$('dlg');d.innerHTML=`<h3 style="margin-top:0">이름 한꺼번에 붙여넣기</h3><p class="hint">엑셀이나 나이스에서 이름 열을 복사해 붙여넣으세요. 한 줄에 한 명, 1번부터 차례대로 들어가요. "3 홍길동"처럼 번호를 붙이면 그 번호에 들어가요.</p><textarea id="impT" rows="12"></textarea><div class="row" style="justify-content:flex-end;margin-top:10px"><button data-act="dlgClose">취소</button><button class="primary" data-act="namesOk">넣기</button></div>`;d.showModal();},
+  dlgClose:()=>$('dlg').close(),
+  namesOk:()=>{
+    $('impT').value.split('\n').map(x=>x.trim()).filter(Boolean).forEach((l,i)=>{const m=l.match(/^(\d+)[\s.,)\t]+(.+)$/);const no=m?+m[1]:i+1,nm=(m?m[2]:l).trim();
+      let s=state.students.find(x=>x.no===no);if(!s){s=newStudent(no);state.students.push(s);}s.name=nm;});
+    if(!curS())state.cur=S()[0]?.id||null;save();$('dlg').close();render();
+  },
+  pick:el=>{state.cur=el.dataset.id;save();render();},
+  nextStu:()=>{const L=S(),i=L.findIndex(x=>x.id===state.cur);state.cur=(L[i+1]||L[0]).id;save();render();},
+  chip:el=>{const s=curS(),k=el.dataset.k,i=s.checks.indexOf(k);if(i>=0)s.checks.splice(i,1);else s.checks.push(k);save();el.classList.toggle('on');},
+  clearChecks:()=>{const s=curS();if(confirm('체크와 메모를 지울까요?')){s.checks=[];s.memo='';save();render();}},
+  genHb:()=>run(async()=>{
+    const s=curS();if(!s.checks.length&&!s.memo.trim())throw new Error('관찰 항목을 체크하거나 메모를 입력하세요.');
+    const extra=($('extraReq')||{}).value||'',o=hbOthers(s);prog('만드는 중… (다른 학생과 같은 문장이 생기면 자동으로 다시 써요)');
+    const r=await genUnique(hbMsgs(s,extra,o),o,t=>{const e=$('hbOut');if(e)e.value=t;});
+    s.hb={text:r.text,flag:r.flag};save();
+  }),
+  bulkHb:()=>run(async()=>{
+    const T=S().filter(s=>s.checks.length||s.memo.trim());if(!T.length)throw new Error('체크된 학생이 없어요.');
+    const onlyMissing=confirm('이미 행발이 있는 학생은 건너뛸까요?\n(확인=건너뛰기, 취소=모두 새로 만들기)');
+    const extra=($('extraReq')||{}).value||'';let n=0;
+    for(const s of T){if(stopFlag)break;if(onlyMissing&&s.hb&&s.hb.text)continue;n++;
+      prog(`${s.no}번 ${dname(s)} 만드는 중… (${n}/${T.length})`);const o=hbOthers(s);
+      const r=await genUnique(hbMsgs(s,extra,o),o,t=>{if(s.id===state.cur){const e=$('hbOut');if(e)e.value=t;}});
+      s.hb={text:r.text,flag:r.flag};save();}
+    toast(`${n}명 완료`);
+  }),
+  genNu:()=>run(async()=>{
+    const s=curS(),memo=$('nuMemo').value.trim(),date=$('nuDate').value||today();if(!memo)throw new Error('이 날 있었던 일을 입력하세요.');
+    const item={id:uid(),date,memo,text:'',flag:''},o=nuOthers(item.id),extra=($('extraReq')||{}).value||'';
+    $('nuLive').innerHTML='<textarea id="nuLiveT" rows="3"></textarea>';
+    const r=await genUnique(nuMsgs(s,item,extra,o),o,t=>{const e=$('nuLiveT');if(e)e.value=t;});
+    item.text=r.text;item.flag=r.flag;s.nu.push(item);save();
+  }),
+  delNu:el=>{const s=curS();if(confirm('이 누가기록을 삭제할까요?')){s.nu=s.nu.filter(n=>n.id!==el.dataset.nid);save();render();}},
+  pubClear:()=>{psOf(state.ui.planSubj).publisher='';state.ui.pubCustom=false;save();render();},
+  openRefs:el=>fetch('/api/open?what=refs&subj='+encodeURIComponent(el.dataset.v),{method:'POST'}),
+  reloadRefs:()=>loadRefs(state.ui.planSubj,true),
+  delRef:async el=>{if(!confirm(`${el.dataset.v} 파일을 평가기준 폴더에서 뺄까요?`))return;await fetch(`/api/refs/delete?subj=${encodeURIComponent(state.ui.planSubj)}&name=${encodeURIComponent(el.dataset.v)}`,{method:'POST'});loadRefs(state.ui.planSubj,true);},
+  addA:()=>{const subj=state.ui.planSubj,sem=state.ui.planSem;state.plan.assessments.push({id:uid(),subj,sem,unit:'',std:[],element:'',method:'서술형',task:'',ref:'',crit:{상:'',중:'',하:''},inp:{상:'',중:'',하:''},locked:false});save();render();},
+  delA:el=>{if(!confirm('이 수행평가와 입력된 학생 성취수준을 삭제할까요?'))return;const id=el.dataset.aid;state.plan.assessments=state.plan.assessments.filter(a=>a.id!==id);state.students.forEach(s=>delete s.levels[id]);save();render();},
+  lockA:el=>{const a=state.plan.assessments.find(x=>x.id===el.dataset.aid);if(!a.locked&&(!a.crit.상||!a.inp.상))if(!confirm('평가기준이나 입력 문장이 비어 있어요. 그래도 확정할까요?'))return;a.locked=!a.locked;save();render();},
+  genCrit:el=>run(async()=>{
+    const a=state.plan.assessments.find(x=>x.id===el.dataset.aid);if(!a.std.length&&!a.unit)throw new Error('단원이나 성취기준을 먼저 고르세요.');
+    const p=$('cp_'+a.id);const t=await chat(critMsgs(a),x=>{if(p)p.textContent='작성 중… '+x.slice(-100);},{temperature:0.4});
+    const r=parseCrit(t);if(!r.crit.상)throw new Error('형식에 맞는 답을 받지 못했어요. 한 번 더 눌러 주세요.\n\n'+t.slice(0,300));
+    if(!a.element)a.element=r.element;if(!a.task)a.task=r.task;a.crit=r.crit;a.inp=r.inp;save();toast('평가기준을 만들었어요. 읽어 보고 [확정]을 누르세요.');
+  }),
+  lvl:el=>{const s=byId(el.dataset.id),k=el.dataset.aid;if(s.levels[k]===el.dataset.v)delete s.levels[k];else s.levels[k]=el.dataset.v;save();
+    el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===s.levels[k]));},
+  fillCol:el=>{state.students.forEach(s=>{if(!s.levels[el.dataset.aid])s.levels[el.dataset.aid]='중';});save();render();},
+  genGyo:el=>run(()=>genGyoOne(byId(el.dataset.id))),
+  bulkGyo:el=>run(async()=>{
+    const key=gyoKey(state.ui.gyoSubj,state.ui.gyoPeriod),all=el.dataset.v==='all';
+    if(all&&!confirm('이미 만든 문장까지 모두 새로 만들까요?'))return;let n=0;const L=S();
+    for(const s of L){if(stopFlag)break;if(!all&&s.gyo[key]&&s.gyo[key].text)continue;n++;prog(`${s.no}번 ${dname(s)} 만드는 중… (${n})`);await genGyoOne(s);}
+    toast(`${n}명 완료`);
+  }),
+  autoFix:()=>run(async()=>{const n=await autoFixAll();toast(dupReport().length?'일부 문장은 직접 고쳐 주세요.':`${n}곳을 고쳤어요. 똑같은 문장이 없어요.`);}),
+  csvAll:()=>{
+    if(dupReport().length){alert('똑같은 문장이 있어서 내보낼 수 없어요. 먼저 고쳐 주세요.');return;}
+    const L=S(),keys=[...new Set(L.flatMap(s=>Object.keys(s.gyo).filter(k=>s.gyo[k].text)))].sort();
+    const head=['번호','이름','행동특성 및 종합의견',...keys.map(k=>{const [a,b]=k.split('|');return `${a}(${PERIOD[b]})`;})];
+    csv(`생기부_${today()}.csv`,[head,...L.map(s=>[s.no,dname(s),s.hb?.text||'',...keys.map(k=>s.gyo[k]?.text||'')])]);
+    state.lastExport=today();save();render();
+  },
+  csvNu:()=>{if(dupReport().length){alert('똑같은 문장이 있어서 내보낼 수 없어요.');return;}csv(`누가기록_${today()}.csv`,[['번호','이름','날짜','상황','내용'],...S().flatMap(s=>[...s.nu].sort((a,b)=>a.date.localeCompare(b.date)).map(n=>[s.no,dname(s),n.date,n.memo,n.text]))]);state.lastExport=today();save();},
+  csvPlan:()=>csv(`평가계획_${today()}.csv`,[['학기','교과','출판사','단원','성취기준','평가요소','평가방법','평가과제','상','중','하','상 입력문','중 입력문','하 입력문','확정'],
+    ...state.plan.assessments.map(a=>[PERIOD[a.sem],a.subj,(state.plan.subjects[a.subj]||{}).publisher||'',a.unit,a.std.map(c=>`[${c}] ${stdText(a.subj,c)}`).join('\n'),a.element,a.method,a.task,a.crit.상,a.crit.중,a.crit.하,a.inp.상,a.inp.중,a.inp.하,a.locked?'O':'X'])]),
+  backup:async()=>{await flush();const r=await fetch('/api/backup',{method:'POST'});toast(r.ok?'백업했어요':'백업하지 못했어요');},
+  openBackup:()=>fetch('/api/open?what=backup',{method:'POST'}),
+  openDocs:()=>fetch('/api/open?what=docs',{method:'POST'}),
+  restore:()=>{const f=$('fileRestore');f.onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const j=JSON.parse(await file.text());if(!Array.isArray(j.students))throw 0;if(!confirm(`${j.students.length}명의 백업으로 바꿀까요?`))return;adopt(j);if(!state.office&&j.settings)state.office='';await flush();location.reload();}catch(err){alert('백업 파일을 읽을 수 없어요.');}};f.click();},
+  saveLLM:async()=>{const base=$('llmBase').value.trim(),model=$('llmModel').value.trim();if(base&&!model){alert('모델 이름을 입력하세요.');return;}
+    await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({llmBase:base,model:base?model:''})});INFO=await getJSON('/api/info');SETUP=null;pollSetup();toast('적용했어요');},
+  addStd:()=>{const cs=state.ui.stdSubj||subjects()[0],arr=state.customStd[cs]=state.customStd[cs]||[];let n=0;
+    $('stdPaste').value.split('\n').forEach(l=>{const m=l.trim().match(/^\[?\s*(\d[가-힣]{1,2}\d{2}-\d{2})\s*\]?\s*(.+)$/);if(m&&!stdList(cs).some(x=>x[0]===m[1])){arr.push([m[1],m[2].trim()]);n++;}});
+    save();render();toast(n?`${n}개 추가`:'형식에 맞는 줄이 없어요');},
+  clearStd:()=>{const cs=state.ui.stdSubj||subjects()[0];if(confirm('추가한 성취기준을 지울까요?')){delete state.customStd[cs];save();render();}},
+  wipe:async()=>{if(confirm('정말 모든 학생·평가 데이터를 지울까요? 백업이 없으면 되돌릴 수 없어요.')){await fetch('/api/backup',{method:'POST'});await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});location.reload();}},
+};
+async function genGyoOne(s){
+  const subj=state.ui.gyoSubj,p=state.ui.gyoPeriod,key=gyoKey(subj,p),o=gyoOthers(s,key);
+  const r=await genUnique(gyoMsgs(s,subj,p,o),o,t=>{const e=$('g_'+s.id);if(e)e.value=t;});
+  s.gyo[key]={text:r.text,flag:r.flag};save();
+  const m=$('gm_'+s.id);if(m)m.innerHTML=metaHtml(r.text,state.settings.len.gyo,s,sameSentences(r.text,gyoOthers(s,key)),r.flag);
+}
+const AF=(a,f,v)=>{if(f.includes('.')){const [x,y]=f.split('.');a[x][y]=v;}else a[f]=v;};
+const BIND={
+  name:el=>{byId(el.dataset.id).name=el.value.trim();save();},
+  memo:el=>{curS().memo=el.value;save();},
+  obsMode:el=>{state.ui.obsMode=el.value;save();render();},
+  hbText:el=>{const s=curS();s.hb=s.hb||{text:'',flag:''};s.hb.text=el.value;s.hb.flag='';save();$('hbMeta').innerHTML=metaHtml(el.value,state.settings.len.hb,s,sameSentences(el.value,hbOthers(s)),'');},
+  nuText:el=>{const s=curS(),n=s.nu.find(x=>x.id===el.dataset.nid);n.text=el.value;n.flag='';save();$('nm_'+n.id).innerHTML=metaHtml(n.text,state.settings.len.nu,s,sameSentences(n.text,nuOthers(n.id)),'');},
+  planSem:el=>{state.ui.planSem=el.value;save();render();},
+  planSubj:el=>{state.ui.planSubj=el.value;state.ui.pubCustom=false;save();render();},
+  pubSel:el=>{const ps=psOf(state.ui.planSubj);if(el.value==='__custom'){state.ui.pubCustom=true;if(PUBLISHERS.includes(ps.publisher))ps.publisher='';}else{state.ui.pubCustom=false;ps.publisher=el.value;}save();render();},
+  pubText:el=>{psOf(state.ui.planSubj).publisher=el.value.trim();save();},
+  units:el=>{psOf(state.ui.planSubj).units[state.ui.planSem]=el.value;save();},
+  af:el=>{const a=state.plan.assessments.find(x=>x.id===el.dataset.aid);AF(a,el.dataset.f,el.value);save();},
+  astd:el=>{const a=state.plan.assessments.find(x=>x.id===el.dataset.aid),c=el.dataset.c;a.std=el.checked?[...new Set([...a.std,c])]:a.std.filter(x=>x!==c);save();},
+  gradeSubj:el=>{state.ui.gradeSubj=el.value;save();render();},
+  gradeSem:el=>{state.ui.gradeSem=el.value;save();render();},
+  gyoSubj:el=>{state.ui.gyoSubj=el.value;save();render();},
+  gyoPeriod:el=>{state.ui.gyoPeriod=el.value;save();render();},
+  gyoMemo:el=>{byId(el.dataset.id).gyoMemo[state.ui.gyoSubj]=el.value;save();},
+  gyoText:el=>{const s=byId(el.dataset.id),key=gyoKey(state.ui.gyoSubj,state.ui.gyoPeriod);s.gyo[key]=s.gyo[key]||{text:'',flag:''};s.gyo[key].text=el.value;s.gyo[key].flag='';save();$('gm_'+s.id).innerHTML=metaHtml(el.value,state.settings.len.gyo,s,sameSentences(el.value,gyoOthers(s,key)),'');},
+  office:el=>{state.office=el.value;save();render();},
+  grade:el=>{state.grade=el.value;save();render();},
+  schoolRules:el=>{state.settings.schoolRules=el.value;save();},
+  set:el=>{const k=el.dataset.k;state.settings[k]=+el.value||DEF_SETTINGS[k];save();},
+  len:el=>{state.settings.len[el.dataset.k]=+el.value||DEF_SETTINGS.len[el.dataset.k];save();},
+  stdSubj:el=>{state.ui.stdSubj=el.value;save();render();},
+};
+function csv(name,rows){const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;dl(name,'\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n'),'text/csv');}
+function dl(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(el&&ACT[el.dataset.act]){e.preventDefault();ACT[el.dataset.act](el,e);}});
+const isToggle=el=>el.type==='checkbox'||el.tagName==='SELECT';
+document.addEventListener('input',e=>{const el=e.target.closest('[data-bind]');if(el&&!isToggle(el))BIND[el.dataset.bind]?.(el);});
+document.addEventListener('change',e=>{const el=e.target.closest('[data-bind]');if(el&&isToggle(el))BIND[el.dataset.bind]?.(el);});
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{const z=e.target.closest&&e.target.closest('#dropZone');if(z){e.preventDefault();z.classList.add('over');}}));
+document.addEventListener('dragleave',e=>{const z=e.target.closest&&e.target.closest('#dropZone');if(z)z.classList.remove('over');});
+document.addEventListener('drop',e=>{const z=e.target.closest&&e.target.closest('#dropZone');if(!z)return;e.preventDefault();z.classList.remove('over');if(e.dataTransfer.files.length)uploadFiles(z.dataset.subj,[...e.dataTransfer.files]);});
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.tab==='plan')loadRefs(state.ui.planSubj,true);});
+
+/* =================== 시작 =================== */
+(async function boot(){
+  try{
+    [RULES,STD,INFO]=await Promise.all([getJSON('/data/rules.json'),getJSON('/data/standards.json'),getJSON('/api/info')]);
+    adopt(await getJSON('/api/state'));
+  }catch(e){$('view').innerHTML=`<div class="panel empty">프로그램과 연결할 수 없어요. 생기부 도우미를 다시 실행해 주세요.<br><span class="hint">${esc(e.message)}</span></div>`;return;}
+  if(!curS())state.cur=S()[0]?.id||null;
+  render();pollSetup();
+  setInterval(()=>fetch('/api/ping').catch(()=>{}),60000);
+  setInterval(async()=>{try{INFO=await getJSON('/api/info');const v=INFO.update&&INFO.update.versions;if(v&&RULES&&v['rules.json']!==RULES.version){RULES=await getJSON('/data/rules.json');toast('기재요령이 최신 버전으로 업데이트됐어요');}if(v&&STD&&v['standards.json']!==STD.version)STD=await getJSON('/data/standards.json');}catch(e){}},300000);
+})();
+</script>
+</body>
+</html>

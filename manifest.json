@@ -1,0 +1,15 @@
+{
+ "files": {
+  "rules.json": {
+   "version": "2026.11.1"
+  },
+  "standards.json": {
+   "version": "2026.11.1"
+  },
+  "app.html": {
+   "version": "1.0.0",
+   "minExe": "1.0.0"
+  }
+ },
+ "notice": ""
+}
