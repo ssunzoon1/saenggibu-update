@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.3.0">
+<meta name="app-version" content="2.4.0">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -259,7 +259,8 @@ function freshState(){return {v:4,office:'',grade:'6',cls:'1',year:String(new Da
   counsel:{rows:[],opt:{count:20,from:'',to:'',cats:['학업','진로','성격','대인관계','컴퓨터 및 스마트폰 과사용','기타'],parent:false,minFrom:10,minTo:30,media:'면담',sel:[]}},
   ui:{hbView:'one',obsSubj:'',obsSem:'1',finSubj:'',finSem:'1',ccaSub:'auto',stdSubj:'',open:{cca:true}}};}
 let state=freshState();
-let RULES=null,STD=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null;
+let RULES=null,STD=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null,BENCH=null;
+function benchText(b){if(b.error)return '측정 실패: '+esc(b.error);const f=n=>n>=10?Math.round(n):n.toFixed(1);return `읽기 ${f(b.readTPS)}토큰/초 · 쓰기 <b>${f(b.writeTPS)}토큰/초</b> · 행발 1명 약 <b>${Math.max(1,Math.round(b.hbSec))}초</b>${b.loadSec>1?` (처음 불러오기 ${Math.round(b.loadSec)}초)`:''} · ${b.writeTPS<6?'<span style="color:var(--red)">많이 느려요 → 초경량 모델 추천</span>':b.writeTPS<12?'보통':'빨라요'}`;}
 function newStudent(no){return {id:uid(),no,name:'',gender:'',checks:[],memo:'',hb:null,nu:[],sub:{},obs:{},fin:{},cca:{auto:{note:'',recs:[]},club:{clubId:'',note:'',recs:[]},career:{note:'',recs:[]}}};}
 function normStudent(x){
   x.nu=x.nu||[];x.sub=x.sub||{};x.obs=x.obs||{};x.fin=x.fin||{};x.checks=x.checks||[];x.memo=x.memo||'';x.gender=x.gender||'';
@@ -1101,12 +1102,14 @@ function vSet(){
   <div class="panel"><h4>AI</h4><div id="setupBox">${setupHtml()}</div>
    <p class="hint">지금 모델: <b>${esc((SETUP&&SETUP.model)||(INFO&&INFO.model)||'-')}</b> · 이 PC 안에서만 작동해요.</p>
    ${SPEC?`<div class="hint">이 PC 판정: <b>${esc(SPEC.spec.tierLabel)}</b> (램 ${SPEC.spec.ramGB.toFixed(0)}GB, ${SPEC.spec.cpus}스레드${SPEC.spec.vramGB>=1?`, 그래픽 ${SPEC.spec.vramGB.toFixed(0)}GB`:''}) · 추천 ${esc(SPEC.spec.modelLabel||'-')}</div>
-   <div class="row" style="margin:6px 0"><button class="btn line sm" data-act="pickModel" data-v="e2b">표준 모델로 (E2B · 3.2GB)</button><button class="btn line sm" data-act="pickModel" data-v="e4b" ${SPEC.spec.ramGB>0&&SPEC.spec.ramGB<15?'disabled title="램 16GB 이상에서만"':''}>고성능 모델로 (E4B · 5.0GB · 문장 품질↑)</button></div>
+   <div class="row" style="margin:6px 0"><button class="btn line sm" data-act="pickModel" data-v="e2b">표준 모델로 (E2B · 3.2GB)</button><button class="btn line sm" data-act="pickModel" data-v="e4b" ${SPEC.spec.ramGB>0&&SPEC.spec.ramGB<15?'disabled title="램 16GB 이상에서만"':''}>고성능 모델로 (E4B · 5.0GB · 문장 품질↑)</button><button class="btn line sm" data-act="pickModel" data-v="ex12">초경량 모델로 (EXAONE 4.0 1.2B · 0.8GB · 빠름 · 시험판)</button></div>
+   ${SPEC.spec.tier==='low'?'<div class="warn">이 PC는 저사양이라 표준 모델이 느릴 수 있어요. [속도 측정]을 해 보고 너무 느리면 초경량 모델을 써 보세요.</div>':''}
    <div class="hint">바꾸면 새 모델을 내려받고, 다 받으면 예전 모델은 지워서 공간을 비워요.</div>`:''}
+   <div class="row" style="margin-top:8px"><button class="btn line sm" data-act="bench">⏱ 속도 측정</button><span class="hint" style="margin:0" id="benchOut">${BENCH?benchText(BENCH):'이 PC에서 AI가 얼마나 빠른지 재 봐요 (30초~2분)'}</span></div>
    <div class="hint" style="font-weight:700;color:#333;margin-top:10px">가벼운 모드 (저사양 PC용)</div>
    <div class="row"><span class="seg">${[['auto','자동'],['on','켜기'],['off','끄기']].map(([k,l])=>`<button class="${LITE.mode===k?'on':''}" data-act="liteMode" data-v="${k}">${l}</button>`).join('')}</span>
    <span class="hint" style="margin:0">지금 ${LITE.on?'<b style="color:var(--ok)">켜짐</b>':'꺼짐'} · 이 PC: 램 ${LITE.ramGB?LITE.ramGB.toFixed(0):'?'}GB, CPU ${LITE.cpus||'?'}코어</span></div>
-   <p class="hint">켜면 메모리를 적게 쓰고 CPU 하나를 남겨 두며 AI를 낮은 우선순위로 돌려요. 만드는 속도는 조금 느려지지만 PC가 멈추지 않아요. '자동'은 램 8GB 이하이거나 4코어 이하인 PC에서 켜져요. 만드는 동안 한글·크롬 같은 무거운 프로그램은 닫아 두면 더 좋아요.</p>
+   <p class="hint">켜면 AI 작업 공간을 줄여 메모리를 적게 쓰고, AI를 낮은 우선순위로 돌려 마우스·화면이 멈추지 않게 해요. '자동'은 램 8GB 이하이거나 4코어 이하인 PC에서 켜져요. 만드는 동안 한글·크롬 같은 무거운 프로그램은 닫아 두면 더 좋아요.</p>
    <div class="row"><label class="hint" style="margin:0">창의성 <input type="number" step="0.1" min="0" max="1.5" style="width:70px" data-bind="set" data-k="temperature" value="${st.temperature}"></label><label class="hint" style="margin:0">최대 길이(토큰) <input type="number" step="100" style="width:90px" data-bind="set" data-k="maxTokens" value="${st.maxTokens}"></label></div>
    <details><summary>고급: 다른 AI 서버 사용(LM Studio 등)</summary><div class="hint">서버 주소 (비우면 기본 Ollama)</div><input id="llmBase" style="width:100%" value="${esc(INFO&&INFO.llmBase||'')}" placeholder="http://127.0.0.1:1234/v1"><div class="hint">모델 이름</div><input id="llmModel" style="width:100%" value="${esc(INFO&&INFO.llmBase?INFO.model:'')}"><div class="row" style="margin-top:6px"><button class="btn line" data-act="saveLLM">적용</button></div></details></div>
   <div class="panel"><h4>성취기준 추가 (선택)</h4><p class="hint">2022 개정 전 교과 성취기준이 이미 들어 있어요. 학교자율시간 등 추가할 것만 넣으세요.</p>
@@ -1127,7 +1130,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.3.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.4.0</p></div></div>`;
 }
 
 /* ======================================================================
@@ -1246,7 +1249,8 @@ const ACT={
   openBackup:()=>fetch('/api/open?what=backup',{method:'POST'}),
   openDocs:()=>fetch('/api/open?what=docs',{method:'POST'}),
   restore:()=>{const f=$('fileRestore');f.onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const j=JSON.parse(await file.text());if(!Array.isArray(j.students))throw 0;if(!confirm(`${j.students.length}명의 백업으로 바꿀까요?`))return;adopt(j);await flush();location.reload();}catch(err){alert('백업 파일을 읽을 수 없어요.');}};f.click();},
-  pickModel:async el=>{const k=el.dataset.v;if(!confirm(k==='e4b'?'고성능 모델(약 5GB)을 내려받을까요? 문장 품질은 좋아지지만 만드는 속도는 조금 느려질 수 있어요.':'표준 모델(약 3.2GB)로 바꿀까요?'))return;
+  bench:async()=>{const o=$('benchOut');if(!aiReady()){toast('AI를 먼저 준비해야 해요');return;}o.textContent='재는 중… (처음엔 모델을 불러오느라 더 걸려요)';try{const r=await fetch('/api/bench');if(!r.ok)throw new Error(await r.text());BENCH=await r.json();}catch(e){BENCH={error:e.message};}const o2=$('benchOut');if(o2)o2.innerHTML=benchText(BENCH);},
+  pickModel:async el=>{const k=el.dataset.v;if(k==='ex12'&&!confirm('초경량 모델(EXAONE 4.0 1.2B, LG AI연구원)은 약 0.8GB로 표준보다 3~4배 가볍고 빨라요.\n대신 문장 표현이 단순할 수 있어요. 아직 이 프로그램에서 충분히 검증하지 못한 시험판이라, 문장이 이상하면 표준 모델로 되돌리세요.\n\n바꿀까요?'))return;if(k!=='ex12'&&!confirm(k==='e4b'?'고성능 모델(약 5GB)을 내려받을까요? 문장 품질은 좋아지지만 만드는 속도는 조금 느려질 수 있어요.':'표준 모델(약 3.2GB)로 바꿀까요?'))return;
     const r=await fetch('/api/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})});if(!r.ok){alert(await r.text());return;}
     SETUP=null;toast('모델을 준비하고 있어요. 처음 화면에서 진행 상황을 볼 수 있어요.');setTimeout(pollSetup,600);state.tab='home';render();},
   liteMode:async el=>{try{LITE=await (await fetch('/api/lite',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:el.dataset.v})})).json();}catch(e){}render();toast(LITE.on?'가벼운 모드를 켰어요':'가벼운 모드를 껐어요');},
