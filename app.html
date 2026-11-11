@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.0.0">
+<meta name="app-version" content="2.2.0">
 <title>생기부 도우미</title>
 <style>
 :root{--blue:#3a72f2;--blue-d:#2c5fd6;--blue-soft:#eaf1ff;--navy:#1f2b46;--green:#1f9d63;--green-d:#178452;--ink:#222;--muted:#6b7380;--line:#dde2ea;--line2:#e9edf3;--bg:#f4f6fa;--panel:#fff;--red:#e0413a;--red-soft:#fdeceb;--warn:#9a5b06;--warn-soft:#fff4dc;--ok:#1f9d63;--ok-soft:#e6f6ee}
@@ -256,7 +256,7 @@ function freshState(){return {v:4,office:'',grade:'6',cls:'1',year:String(new Da
   counsel:{rows:[],opt:{count:20,from:'',to:'',cats:['학업','진로','성격','대인관계','컴퓨터 및 스마트폰 과사용','기타'],parent:false,minFrom:10,minTo:30,media:'면담',sel:[]}},
   ui:{hbView:'one',obsSubj:'',obsSem:'1',finSubj:'',finSem:'1',ccaSub:'auto',stdSubj:'',open:{cca:true}}};}
 let state=freshState();
-let RULES=null,STD=null,INFO=null,SETUP=null;
+let RULES=null,STD=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null;
 function newStudent(no){return {id:uid(),no,name:'',gender:'',checks:[],memo:'',hb:null,nu:[],sub:{},obs:{},fin:{},cca:{auto:{note:'',recs:[]},club:{clubId:'',note:'',recs:[]},career:{note:'',recs:[]}}};}
 function normStudent(x){
   x.nu=x.nu||[];x.sub=x.sub||{};x.obs=x.obs||{};x.fin=x.fin||{};x.checks=x.checks||[];x.memo=x.memo||'';x.gender=x.gender||'';
@@ -368,7 +368,7 @@ function classHints(others){
   return {openings:[...new Set(openings)].slice(-8),freq};
 }
 function avoidBlock(lines){
-  if(!lines.length)return '';
+  if(!lines.length)return '';if(LITE.on)lines=lines.slice(0,4);
   return `\n[피할 문장] 아래 문장은 같은 반 다른 학생에게 이미 썼으니 똑같이 쓰지 말고 표현과 내용을 다르게 쓰세요.\n${lines.slice(0,10).map(x=>'- '+x).join('\n')}`;
 }
 function uniqBlock(hints,avoid){
@@ -440,19 +440,34 @@ function aiReady(){return SETUP&&SETUP.ready;}
 function setStatus(){
   const d=$('dot'),t=$('statusText');if(!d)return;
   if(aiReady()){d.className='dot ok';t.textContent='AI 준비 완료';}
+  else if(SETUP&&SETUP.stage==='unsupported'){d.className='dot bad';t.textContent='이 PC에는 설치 불가';}
   else if(SETUP&&SETUP.stage==='error'){d.className='dot bad';t.textContent='AI 준비 실패';}
   else{d.className='dot wait';t.textContent='AI 준비 중'+(SETUP&&SETUP.progress>0?` ${Math.round(SETUP.progress*100)}%`:'');}
 }
 async function pollSetup(){
   try{SETUP=await getJSON('/api/setup');}catch(e){SETUP={stage:'error',error:'프로그램과 연결이 끊겼어요. 생기부 도우미를 다시 실행하세요.'};}
   setStatus();const box=$('setupBox');if(box)box.innerHTML=setupHtml();
-  if(!aiReady()&&SETUP.stage!=='error')setTimeout(pollSetup,1500);
+  if(!aiReady()&&SETUP.stage!=='error'&&SETUP.stage!=='unsupported')setTimeout(pollSetup,1500);
+  if(SETUP.stage==='unsupported'||SETUP.ready){try{SPEC=await getJSON('/api/spec');}catch(e){}const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}
+}
+function specHtml(){
+  if(!SPEC)return '<span class="hint">PC 사양을 확인하고 있어요…</span>';
+  const sp=SPEC.spec,g=(sp.gpus||[]).filter(x=>x.name),col={high:'var(--blue-d)',std:'var(--ok)',low:'var(--warn)',no:'var(--red)'}[sp.tier];
+  const row=(k,v,bad)=>`<tr><th style="width:110px;text-align:left">${k}</th><td style="${bad?'color:var(--red);font-weight:700':''}">${v}</td></tr>`;
+  return `<div class="row" style="margin-bottom:6px"><b style="font-size:15px">PC 사양 확인 결과</b><span class="badge" style="background:${col};color:#fff;font-size:12.5px;padding:2px 9px">${esc(sp.tierLabel)}</span>${sp.modelLabel?`<span class="hint" style="margin:0">→ 설치 모델: <b>${esc(sp.modelLabel)}</b></span>`:''}</div>
+  <table class="tbl" style="max-width:720px">${row('메모리(램)',`${sp.ramGB.toFixed(1)}GB`,sp.ramGB>0&&sp.ramGB<6.8)}${row('CPU',`${esc(sp.cpuName||'')} (${sp.cpus}스레드)${sp.avx2?'':' · 구형'}`)}${row('그래픽',g.length?g.map(x=>`${esc(x.name)}${x.vramGB>=1?` (${x.vramGB.toFixed(0)}GB)`:''}`).join(', '):'확인 안 됨')}${row('남은 공간',sp.diskFreeGB?`${esc(sp.drive)} 드라이브 ${sp.diskFreeGB.toFixed(1)}GB (필요 ${sp.needGB.toFixed(0)}GB)`:'확인 안 됨',sp.diskFreeGB&&sp.diskFreeGB<sp.needGB)}${row('운영체제',esc(sp.os))}</table>
+  ${(sp.warnings||[]).map(w=>`<div class="warn" style="margin-top:4px">⚠ ${esc(w)}</div>`).join('')}`;
 }
 function setupHtml(){
   if(!SETUP)return '';
-  if(aiReady())return `<b style="color:var(--ok)">✔ AI 준비 완료</b> <span class="hint">${esc(SETUP.model||'')}</span>`;
+  if(aiReady())return `<b style="color:var(--ok)">✔ AI 준비 완료</b> <span class="hint">${esc(SETUP.model||'')}</span>${LITE.on?` <span class="badge ok">가벼운 모드</span> <span class="hint">PC가 멈추지 않게 천천히 만들어요</span>`:''}`;
+  if(SETUP.stage==='unsupported')return `<div style="border:2px solid var(--red);border-radius:6px;padding:14px;background:var(--red-soft)"><b style="color:var(--red);font-size:16px">⛔ 이 컴퓨터에는 AI를 설치할 수 없어요</b>
+    ${(SETUP.error||'').split('\n').map(r=>`<div style="margin-top:6px">· ${esc(r)}</div>`).join('')}
+    <div class="hint" style="margin-top:10px;color:#444"><b>최소 사양</b>: 윈도우 10 이상 · 메모리 8GB 이상 · 남은 공간 9GB 이상 (Ollama가 이미 있으면 5GB)<br><b>권장 사양</b>: 메모리 16GB 이상 · 4코어 이상 CPU 또는 그래픽 메모리 6GB 이상</div>
+    <div class="row" style="margin-top:10px"><button class="btn" data-act="retrySetup">다시 확인</button><span class="hint" style="margin:0">학생 명단·체크 같은 입력은 지금도 할 수 있어요. 다른 PC로 옮길 때는 ⑧에서 백업하세요.</span></div></div>
+    <div id="specBox" class="panel" style="margin-top:10px">${specHtml()}</div>`;
   if(SETUP.stage==='error')return `<b style="color:var(--red)">AI를 준비하지 못했어요</b><p class="hint">${esc(SETUP.error)}</p><button class="btn" data-act="retrySetup">다시 시도</button>`;
-  const p=SETUP.progress;return `<b>AI 준비 중…</b> <span class="hint">처음 한 번만 필요해요. 기다리는 동안 ① 학생 명단과 체크를 먼저 해도 돼요.</span><div class="bar ${p>=0?'':'ind'}"><div style="width:${Math.max(0,p)*100}%"></div></div><div class="hint">${esc(SETUP.message||'')}</div>`;
+  const p=SETUP.progress;return `<div id="specBox" style="margin-bottom:10px">${specHtml()}</div><b>AI 준비 중…</b> <span class="hint">처음 한 번만 필요해요. 기다리는 동안 ① 학생 명단과 체크를 먼저 해도 돼요.</span><div class="bar ${p>=0?'':'ind'}"><div style="width:${Math.max(0,p)*100}%"></div></div><div class="hint">${esc(SETUP.message||'')}</div>`;
 }
 function clean(t){
   return t.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/<\|?channel\|?>[\s\S]*?<\|?(message|channel)\|?>/g,'').replace(/\*\*/g,'')
@@ -527,8 +542,13 @@ function subjTraitText(s,subj){
   return L.length?L.join('\n'):'- (체크된 항목 없음, 일반적인 참여 모습으로 씀)';
 }
 function obsOthers(s,key){const L=[];state.students.forEach(x=>{if(x.id===s.id)return;(x.obs[key]||[]).forEach((r,i)=>L.push({name:`${dname(x)} ${i+1}번`,text:r.text,unit:r.unit}));});return L;}
+function relStds(subj,units,k){
+  const L=stdList(subj);if(L.length<=k)return L;
+  const ug=grams(units.join(' ').replace(/^[\d\s.()\-~]+/gm,''),2);
+  return L.map(x=>({x,sc:inter(grams(x[1],2),ug)})).sort((a,b)=>b.sc-a.sc).slice(0,k).map(o=>o.x).sort((a,b)=>a[0].localeCompare(b[0]));
+}
 function obsMsgs(s,subj,sem,units,counts,avoid){
-  const stds=stdList(subj).slice(0,30).map(([c,t])=>`${c} ${t}`).join('\n');
+  const stds=relStds(subj,units,LITE.on?6:14).map(([c,t])=>`${c} ${t}`).join('\n');
   return [{role:'system',content:sysPrompt()},{role:'user',content:
 `[작성할 항목] ${subj} 교과 수업 관찰 기록 (${SEM[sem]}) — 단원 순서대로 모두 ${counts.reduce((a,b)=>a+b,0)}개
 [학생 특성]
@@ -561,10 +581,19 @@ async function genObsFor(s,subj,sem,onProg){
   const N=Math.max(1,+state.obsCount||20),counts=slots(N,Math.min(units.length,N)),U=units.slice(0,counts.length);
   const key=okey(subj,sem),others=obsOthers(s,key),idx=makeIdx(others);
   const avoid=shuffle(others).slice(0,8).map(o=>o.text);
-  onProg&&onProg('작성 중…');
-  const text=await chat(obsMsgs(s,subj,sem,U,counts,avoid),t=>onProg&&onProg(`작성 중… ${t.split('\n').filter(x=>x.trim()&&!x.startsWith('#')).length}/${N}`),{max:Math.max(2400,N*140)});
-  let {groups,loose}=parseObs(text,U);
-  if(loose.length){let k=0;U.forEach((u,i)=>{groups[i]=loose.slice(k,k+counts[i]);k+=counts[i];});}
+  let groups=U.map(()=>[]);
+  if(LITE.on){ // 가벼운 모드: 단원마다 짧게 나눠 요청 (메모리 사용 ↓)
+    for(let i=0;i<U.length&&!stopFlag;i++){
+      onProg&&onProg(`${U[i]} 작성 중… (${i+1}/${U.length}단원)`);
+      const t=await chat(obsMsgs(s,subj,sem,[U[i]],[counts[i]],avoid.slice(0,3)),null,{max:counts[i]*150+200});
+      const r=parseObs(t,[U[i]]);groups[i]=(r.groups[0].length?r.groups[0]:r.loose).slice(0,counts[i]);
+    }
+  }else{
+    onProg&&onProg('작성 중…');
+    const text=await chat(obsMsgs(s,subj,sem,U,counts,avoid),t=>onProg&&onProg(`작성 중… ${t.split('\n').filter(x=>x.trim()&&!x.startsWith('#')).length}/${N}`),{max:Math.max(2400,N*140)});
+    const r=parseObs(text,U);groups=r.groups;
+    if(r.loose.length){let k=0;U.forEach((u,i)=>{groups[i]=r.loose.slice(k,k+counts[i]);k+=counts[i];});}
+  }
   for(let i=0;i<U.length;i++){ // 모자란 단원 채우기
     let tries=0;
     while(groups[i].length<counts[i]&&tries<2&&!stopFlag){tries++;
@@ -760,14 +789,15 @@ function ensureCur(){if(!curS())state.cur=S()[0]?.id||null;return curS();}
 
 /* ---------- 처음 실행 ---------- */
 function vWelcome(){
-  return `<div class="welcome panel"><h2 style="margin-top:0">반가워요! 먼저 몇 가지만 골라 주세요</h2>
+  const top=SETUP&&SETUP.stage==='unsupported';
+  return `<div class="welcome panel">${top?`<div id="setupBox" style="margin-bottom:18px">${setupHtml()}</div>`:''}<h2 style="margin-top:0">반가워요! 먼저 몇 가지만 골라 주세요</h2>
   <div class="hint" style="font-weight:700;color:#333">1. 소속 교육청 (해당 교육청 기재요령이 적용돼요)</div>
   <div class="offices">${OFFICES.map(o=>`<button data-act="pickOffice" data-v="${o}" class="${state._pick===o?'on':''}">${o}</button>`).join('')}</div>
   <div class="filter" style="margin-top:12px"><label><span class="req">*</span>학년도<input id="wYear" type="number" value="${esc(state.year)}" style="width:90px"></label>
   <label><span class="req">*</span>학년<select id="wGrade">${[1,2,3,4,5,6].map(g=>`<option value="${g}" ${String(g)===String(state.grade)?'selected':''}>${g}</option>`).join('')}</select></label>
   <label><span class="req">*</span>반<input id="wCls" type="number" min="1" value="${esc(state.cls)}" style="width:70px"></label></div>
   <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn big" data-act="welcomeDone">시작하기 →</button></div>
-  <div class="panel" style="margin-top:16px" id="setupBox">${setupHtml()}</div></div>`;
+  ${top?'':`<div class="panel" style="margin-top:16px" id="setupBox">${setupHtml()}</div>`}</div>`;
 }
 
 /* ---------- 처음 화면 ---------- */
@@ -1066,7 +1096,14 @@ function vSet(){
    <div class="row"><label class="hint" style="margin:0">비슷함 허용 <input type="number" step="0.05" min="0.3" max="0.95" style="width:80px" data-bind="set" data-k="docSim" value="${st.docSim}"></label><label class="hint" style="margin:0">다시 쓰기 횟수 <input type="number" min="1" max="8" style="width:70px" data-bind="set" data-k="retries" value="${st.retries}"></label></div></div>
   </div><div>
   <div class="panel"><h4>AI</h4><div id="setupBox">${setupHtml()}</div>
-   <p class="hint">기본 모델: Gemma 4 E2B (Q4_K_M) · 이 PC 안에서만 작동해요.</p>
+   <p class="hint">지금 모델: <b>${esc((SETUP&&SETUP.model)||(INFO&&INFO.model)||'-')}</b> · 이 PC 안에서만 작동해요.</p>
+   ${SPEC?`<div class="hint">이 PC 판정: <b>${esc(SPEC.spec.tierLabel)}</b> (램 ${SPEC.spec.ramGB.toFixed(0)}GB, ${SPEC.spec.cpus}스레드${SPEC.spec.vramGB>=1?`, 그래픽 ${SPEC.spec.vramGB.toFixed(0)}GB`:''}) · 추천 ${esc(SPEC.spec.modelLabel||'-')}</div>
+   <div class="row" style="margin:6px 0"><button class="btn line sm" data-act="pickModel" data-v="e2b">표준 모델로 (E2B · 3.2GB)</button><button class="btn line sm" data-act="pickModel" data-v="e4b" ${SPEC.spec.ramGB>0&&SPEC.spec.ramGB<15?'disabled title="램 16GB 이상에서만"':''}>고성능 모델로 (E4B · 5.0GB · 문장 품질↑)</button></div>
+   <div class="hint">바꾸면 새 모델을 내려받고, 다 받으면 예전 모델은 지워서 공간을 비워요.</div>`:''}
+   <div class="hint" style="font-weight:700;color:#333;margin-top:10px">가벼운 모드 (저사양 PC용)</div>
+   <div class="row"><span class="seg">${[['auto','자동'],['on','켜기'],['off','끄기']].map(([k,l])=>`<button class="${LITE.mode===k?'on':''}" data-act="liteMode" data-v="${k}">${l}</button>`).join('')}</span>
+   <span class="hint" style="margin:0">지금 ${LITE.on?'<b style="color:var(--ok)">켜짐</b>':'꺼짐'} · 이 PC: 램 ${LITE.ramGB?LITE.ramGB.toFixed(0):'?'}GB, CPU ${LITE.cpus||'?'}코어</span></div>
+   <p class="hint">켜면 메모리를 적게 쓰고 CPU 하나를 남겨 두며 AI를 낮은 우선순위로 돌려요. 만드는 속도는 조금 느려지지만 PC가 멈추지 않아요. '자동'은 램 8GB 이하이거나 4코어 이하인 PC에서 켜져요. 만드는 동안 한글·크롬 같은 무거운 프로그램은 닫아 두면 더 좋아요.</p>
    <div class="row"><label class="hint" style="margin:0">창의성 <input type="number" step="0.1" min="0" max="1.5" style="width:70px" data-bind="set" data-k="temperature" value="${st.temperature}"></label><label class="hint" style="margin:0">최대 길이(토큰) <input type="number" step="100" style="width:90px" data-bind="set" data-k="maxTokens" value="${st.maxTokens}"></label></div>
    <details><summary>고급: 다른 AI 서버 사용(LM Studio 등)</summary><div class="hint">서버 주소 (비우면 기본 Ollama)</div><input id="llmBase" style="width:100%" value="${esc(INFO&&INFO.llmBase||'')}" placeholder="http://127.0.0.1:1234/v1"><div class="hint">모델 이름</div><input id="llmModel" style="width:100%" value="${esc(INFO&&INFO.llmBase?INFO.model:'')}"><div class="row" style="margin-top:6px"><button class="btn line" data-act="saveLLM">적용</button></div></details></div>
   <div class="panel"><h4>성취기준 추가 (선택)</h4><p class="hint">2022 개정 전 교과 성취기준이 이미 들어 있어요. 학교자율시간 등 추가할 것만 넣으세요.</p>
@@ -1082,7 +1119,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.0.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.2.0</p></div></div>`;
 }
 
 /* ======================================================================
@@ -1093,7 +1130,7 @@ const ACT={
   ccaGo:el=>{state.tab='cca';state.ui.ccaSub=el.dataset.v;save();render();window.scrollTo(0,0);},
   stop,
   copy:el=>{const c=CLIP[+el.dataset.i];doCopy(typeof c==='function'?c():c);},
-  retrySetup:async()=>{await fetch('/api/setup',{method:'POST'});SETUP=null;setTimeout(pollSetup,500);},
+  retrySetup:async()=>{SPEC=null;await fetch('/api/setup',{method:'POST'});SETUP=null;setTimeout(()=>{getJSON('/api/spec').then(x=>{SPEC=x;const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}).catch(()=>{});pollSetup();},600);},
   pickOffice:el=>{state._pick=el.dataset.v;state.year=$('wYear').value||state.year;state.grade=$('wGrade').value;state.cls=$('wCls').value||'1';render();},
   welcomeDone:()=>{if(!state._pick){alert('교육청을 골라 주세요.');return;}state.office=state._pick;delete state._pick;state.year=$('wYear').value||state.year;state.grade=$('wGrade').value;state.cls=$('wCls').value||'1';state.tab='home';save();render();},
   setCount:()=>{
@@ -1201,6 +1238,10 @@ const ACT={
   openBackup:()=>fetch('/api/open?what=backup',{method:'POST'}),
   openDocs:()=>fetch('/api/open?what=docs',{method:'POST'}),
   restore:()=>{const f=$('fileRestore');f.onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const j=JSON.parse(await file.text());if(!Array.isArray(j.students))throw 0;if(!confirm(`${j.students.length}명의 백업으로 바꿀까요?`))return;adopt(j);await flush();location.reload();}catch(err){alert('백업 파일을 읽을 수 없어요.');}};f.click();},
+  pickModel:async el=>{const k=el.dataset.v;if(!confirm(k==='e4b'?'고성능 모델(약 5GB)을 내려받을까요? 문장 품질은 좋아지지만 만드는 속도는 조금 느려질 수 있어요.':'표준 모델(약 3.2GB)로 바꿀까요?'))return;
+    const r=await fetch('/api/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})});if(!r.ok){alert(await r.text());return;}
+    SETUP=null;toast('모델을 준비하고 있어요. 처음 화면에서 진행 상황을 볼 수 있어요.');setTimeout(pollSetup,600);state.tab='home';render();},
+  liteMode:async el=>{try{LITE=await (await fetch('/api/lite',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:el.dataset.v})})).json();}catch(e){}render();toast(LITE.on?'가벼운 모드를 켰어요':'가벼운 모드를 껐어요');},
   saveLLM:async()=>{const base=$('llmBase').value.trim(),model=$('llmModel').value.trim();if(base&&!model){alert('모델 이름을 입력하세요.');return;}
     await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({llmBase:base,model:base?model:''})});INFO=await getJSON('/api/info');SETUP=null;pollSetup();toast('적용했어요');},
   addStd:()=>{const cs=state.ui.stdSubj||subjects()[0],arr=state.customStd[cs]=state.customStd[cs]||[];let n=0;
@@ -1271,6 +1312,8 @@ document.addEventListener('focusout',e=>{const el=e.target;if(el.dataset&&['ccaS
   try{
     [RULES,STD,INFO]=await Promise.all([getJSON('/data/rules.json'),getJSON('/data/standards.json'),getJSON('/api/info')]);
     adopt(await getJSON('/api/state'));
+    try{LITE=await getJSON('/api/lite');}catch(e){}
+    getJSON('/api/spec').then(x=>{SPEC=x;const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}).catch(()=>{});
   }catch(e){$('view').innerHTML=`<div class="panel empty">프로그램과 연결할 수 없어요. 생기부 도우미를 다시 실행해 주세요.<br><span class="hint">${esc(e.message)}</span></div>`;return;}
   ensureCur();render();pollSetup();
   setInterval(()=>fetch('/api/ping').catch(()=>{}),60000);
