@@ -7,8 +7,8 @@
    "version": "2026.11.1"
   },
   "app.html": {
-   "version": "1.0.0",
-   "minExe": "1.0.0"
+   "version": "2.0.0",
+   "minExe": "2.0.0"
   }
  },
  "notice": ""
