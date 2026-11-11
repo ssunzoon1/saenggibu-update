@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.5.0">
+<meta name="app-version" content="2.5.1">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -380,7 +380,50 @@ function uniqBlock(hints,avoid){
   if(!L.length)return '[개별화] 이 학생만의 특징이 드러나도록 씁니다.';
   return `[다른 학생과 겹치지 않게] 같은 반 다른 학생과 똑같은 문장이 하나라도 있으면 안 됩니다. 다음은 이미 쓰인 표현이니 피하세요.\n${L.slice(0,16).map(x=>'- '+x).join('\n')}`;
 }
-function endDot(t){t=oneLine(t).replace(/^[\s\-•·*\d.)\]]+(?=[가-힣A-Za-z(])/,'').trim();if(t&&!/[.!?]$/.test(t))t+='.';return t;}
+function endDot(t){t=fixDots(oneLine(normPunct(t)).replace(/^[\s\-•·*\d.)\]]+(?=[가-힣A-Za-z(])/,'').trim());if(t&&!/[.!?]$/.test(t))t+='.';return t;}
+/* ======================================================================
+   이상한 글자·마침표 자동 검사
+   ====================================================================== */
+const EN_EXTRA=['PAPS','STEAM','CCTV','USB','LED','DVD','DIY','NIE','CPR','PET','kcal','cal','Wee','SW','VR','AR','QR','OX','TV','CD'];
+let EN_OK=false; // 영어 교과처럼 영어 표현이 들어가도 되는 작업
+const FOREIGN=/[\u0370-\u03FF\u0400-\u052F\u0590-\u05FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u3040-\u30FF\u3131-\u318C\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF66-\uFF9F\uFFFD\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u1E00-\u1EFF]|<\/?(unused|start_of|end_of|bos|eos|pad)|<\|/;
+function normPunct(t){return (t||'').replace(/。/g,'.').replace(/，|、/g,',').replace(/！/g,'!').replace(/？/g,'?').replace(/：/g,':').replace(/；/g,';').replace(/（/g,'(').replace(/）/g,')').replace(/～/g,'~').replace(/\u3000/g,' ');}
+function badEnglish(t){
+  if(EN_OK)return false;
+  const allowed=new Set([...((RULES&&RULES.allowedEnglish)||[]),...EN_EXTRA].map(x=>String(x).toLowerCase()));
+  return (t.match(/[A-Za-z]{3,}/g)||[]).some(w=>!allowed.has(w.toLowerCase()));
+}
+function garbage(t){return /(.)\1{5,}/.test(t.replace(/[\s.\-=~_*·]/g,'')) || /(\S{2,8})(\s*\1){3,}/.test(t);}
+function badText(t){t=t||'';return FOREIGN.test(t)||badEnglish(t)||garbage(t);}
+function badSent(x){return FOREIGN.test(x)||badEnglish(x)||garbage(x);}
+/* 이상한 글자가 든 문장만 빼기 (줄 형식 "번호|활동명|내용"은 유지) */
+function stripBad(t){
+  return (t||'').split('\n').map(line=>{
+    if(!badSent(line))return line;
+    const parts=line.split('|');
+    return parts.map(p=>p.split(/(?<=[.!?])\s+/).filter(x=>!badSent(x)).join(' ')).join('|');
+  }).join('\n');
+}
+const ENDOK=/(함|됨|임|음|봄|짐|남|옴|줌|춤|씀|룸|낌|움|힘|김|침|림|신|님|\))$/;
+const TRUNC=/(고|며|서|여|면|는|은|을|를|의|에|와|과|도|및|해|하|이|가|로|으로|에서|하여|하고|이며|그리고|,)$/;
+/* 마침표 정리: 문장 사이에 빠진 마침표 넣기, 끝 마침표 붙이기 */
+function fixDots(t){
+  return normPunct(t).split('\n').map(line=>{
+    let x=line.replace(/\.{2,}/g,'.').replace(/\s+\./g,'.').replace(/([.!?])(?=[가-힣])/g,'$1 ')
+      .replace(/(함|됨)(\s+)(?=[가-힣])/g,'$1.$2').replace(/[ \t]{2,}/g,' ').trimEnd();
+    const core=x.replace(/["”'’)\]]+$/,'');
+    if(normT(x).length>=8&&!/[.!?]$/.test(core)&&!x.trim().startsWith('#')&&!/\|\s*$/.test(x)&&!/^\s*\d+\s*\|[^|]*$/.test(x))x+='.';
+    return x;
+  }).join('\n');
+}
+/* 끝 문장이 중간에 끊겼는지 */
+function truncated(t){const c=(t||'').trim().replace(/[.!?]+$/,'');return !!c&&!ENDOK.test(c)&&TRUNC.test(c);}
+/* 여러 문장 글에서 끊긴 마지막 문장은 빼기 */
+function dropTrunc(t){
+  const ss=(t||'').trim().split(/(?<=[.!?])\s+/);
+  if(ss.length>1&&truncated(ss[ss.length-1]))ss.pop();
+  return ss.join(' ');
+}
 /* 한 문장 고쳐 쓰기 (뜻 유지) */
 async function rewriteSentence(s,idx,ctx=''){
   for(let i=0;i<4;i++){
@@ -406,6 +449,7 @@ async function genUnique(build,others,onDelta){
   for(let a=0;a<=R;a++){
     if(stopFlag)break;
     let text=await chat(build(a,avoid),onDelta);if(!text)continue;
+    text=dropTrunc(fixDots(oneLine(text)));
     text=dedupeOwn(text);
     const d=dupIn(idx,text),sim=maxSim(text,others);
     if(!d.length&&sim.m<state.settings.docSim)return {text,flag:''};
@@ -422,7 +466,11 @@ async function genUnique(build,others,onDelta){
 }
 /* 짧은 기록 여러 개: 같은 문장은 고쳐 쓰고 색인에 추가 */
 async function uniqRecord(text,idx,owner,ctx){
-  text=endDot(text);
+  text=endDot(dropTrunc(fixDots(oneLine(text))));
+  for(let i=0;i<2&&(truncated(text.replace(/\.$/,''))||badText(text))&&!stopFlag;i++){ // 끊긴 문장·이상한 글자 → 다시 쓰기
+    const t=endDot(clean(await chat([{role:'system',content:sysPrompt()},{role:'user',content:`다음 문장은 중간에 끊겼거나 어색합니다. 같은 뜻으로 완성된 한 문장을 한국어로 다시 쓰세요. 명사형(~함.)으로 끝내고 문장만 출력하세요.${ctx?`\n[상황] ${ctx}`:''}\n[원래 문장] ${text}`}],null,{temperature:0.7,max:300})).split('\n')[0]);
+    if(t&&!badText(t))text=t;
+  }
   if(dupIn(idx,text).length){const r=await fixText(text,idx,ctx);text=r.text;}
   if(dupIn(idx,text).length){ // 고쳐 쓰기로 안 되면 새 내용으로
     for(let i=0;i<3&&dupIn(idx,text).length;i++){
@@ -477,7 +525,24 @@ function clean(t){
   return t.replace(/<think>[\s\S]*?(<\/think>|$)/g,'').replace(/<\|?channel\|?>[\s\S]*?<\|?(message|channel)\|?>/g,'').replace(/\*\*/g,'')
    .replace(/^\s*(행동특성 및 종합의견|행동 누가기록|누가기록|교과학습발달상황|결과|답변)\s*[:：]\s*/,'').replace(/^["“'‘]+|["”'’]+\s*$/g,'').trim();
 }
+/* AI 한 번 부르기 + 이상한 글자가 나오면 자동으로 다시 만들기 */
 async function chat(messages,onDelta,opts={}){
+  const base=opts.temperature??+state.settings.temperature;let text='';
+  for(let a=0;a<3;a++){
+    if(stopFlag)break;
+    let msgs=messages;
+    if(a>0){ // 다시 만들 때: 한국어로만 쓰라고 한 번 더 강조하고 온도를 낮춤
+      msgs=messages.map((m,i)=>i===messages.length-1?{...m,content:m.content+`\n\n[중요] 반드시 한국어(한글)로만 쓰세요. 한자·일본어·러시아어 등 다른 나라 글자와 ${EN_OK?'불필요한 ':''}영어 단어를 쓰지 말고, 문장마다 마침표(.)로 끝내세요.`}:m);
+    }
+    text=normPunct(await chatOnce(msgs,onDelta,{...opts,temperature:a?Math.min(base,0.6)-0.1*(a-1):base}));
+    if(!badText(text))return text;
+    QSTAT.retry++;
+  }
+  const out=stripBad(text);if(out!==text)QSTAT.strip++;
+  return out;
+}
+const QSTAT={retry:0,strip:0};
+async function chatOnce(messages,onDelta,opts={}){
   if(!aiReady())throw new Error('AI를 아직 준비하고 있어요. 처음 화면에서 진행 상태를 확인해 주세요.');
   ctrl=new AbortController();const st=state.settings;
   const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl.signal,
@@ -581,6 +646,7 @@ function parseObs(text,units){
   return {groups,loose:[]};
 }
 async function genObsFor(s,subj,sem,onProg){
+  EN_OK=/영어/.test(subj);
   const units=unitsOf(subj,sem);if(!units.length)throw new Error(`${subj} ${SEM[sem]} 단원을 먼저 입력하세요.`);
   const N=Math.max(1,+state.obsCount||20),counts=slots(N,Math.min(units.length,N)),U=units.slice(0,counts.length);
   const key=okey(subj,sem),others=obsOthers(s,key),idx=makeIdx(others);
@@ -742,7 +808,8 @@ ${s?obsText(s):'-'}
 [출력 형식] "제목|내용" 한 줄만 씁니다.`}],null,{max:500,temperature:0.9});
     const line=out.split('\n').find(l=>l.includes('|'))||out;const p=line.split('|');
     let title=(p.length>1?p[0]:`${r.seed} 상담`).replace(/^제목\s*[:：]?\s*/,'').trim(),content=(p.length>1?p.slice(1).join(' '):out).replace(/^내용\s*[:：]?\s*/,'').trim();
-    if(!content)continue;
+    content=dropTrunc(fixDots(oneLine(content)));title=title.replace(/[.。]+$/,'');
+    if(!content||badText(content))continue;
     if(titles.has(normT(title)))title=`${r.seed} 관련 ${r.cat} 상담`;
     if(titles.has(normT(title)))title=`${title}(${r.date.slice(5).replace('-','/')})`;
     const owner=`${dname(s)} ${r.date}`;
@@ -756,7 +823,7 @@ ${s?obsText(s):'-'}
    실행 래퍼
    ====================================================================== */
 async function run(fn){
-  if(busy)return;busy=true;stopFlag=false;document.body.classList.add('busy');
+  if(busy)return;busy=true;stopFlag=false;EN_OK=false;document.body.classList.add('busy');
   try{await fn();}catch(e){if(e.name!=='AbortError')alert(e.message);}
   busy=false;document.body.classList.remove('busy');save();render();
 }
@@ -1130,7 +1197,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.5.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.5.1</p></div></div>`;
 }
 
 /* ======================================================================
