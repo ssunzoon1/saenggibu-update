@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.2.0">
+<meta name="app-version" content="2.3.0">
 <title>생기부 도우미</title>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
+<link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
 <style>
 :root{--blue:#3a72f2;--blue-d:#2c5fd6;--blue-soft:#eaf1ff;--navy:#1f2b46;--green:#1f9d63;--green-d:#178452;--ink:#222;--muted:#6b7380;--line:#dde2ea;--line2:#e9edf3;--bg:#f4f6fa;--panel:#fff;--red:#e0413a;--red-soft:#fdeceb;--warn:#9a5b06;--warn-soft:#fff4dc;--ok:#1f9d63;--ok-soft:#e6f6ee}
 *{box-sizing:border-box}
@@ -14,7 +17,7 @@ button,select,input,textarea{font:inherit;color:inherit}
 /* ---------- 상단 ---------- */
 .top{display:flex;height:46px;position:sticky;top:0;z-index:20}
 .logo{width:278px;flex:none;background:#fff;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line);cursor:pointer}
-.logo .mk{width:28px;height:28px;border-radius:50%;background:conic-gradient(var(--blue) 0 60%,#28b4e6 60% 80%,#f2a33a 80%);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:13px}
+.logo .mk{width:32px;height:32px;object-fit:contain}
 .logo b{font-size:18px;letter-spacing:-.5px;color:#1d2a4a}
 .bluebar{flex:1;background:var(--blue);display:flex;align-items:center;gap:10px;padding:0 14px;color:#fff}
 .school{border:1px solid rgba(255,255,255,.85);border-radius:4px;padding:2px 9px;font-weight:700;font-size:14px;background:rgba(255,255,255,.08)}
@@ -159,7 +162,7 @@ dialog::backdrop{background:rgba(20,30,50,.35)}
 </head>
 <body>
 <div class="top">
-  <div class="logo" data-act="tab" data-v="home"><span class="mk">생</span><b>생기부 도우미</b></div>
+  <div class="logo" data-act="tab" data-v="home"><img class="mk" src="/icon.png" alt=""><b>생기부 도우미</b></div>
   <div class="bluebar">
     <span class="school" id="schoolPill">교육청 선택 전</span><span class="who" id="whoText"></span>
     <span class="sp"></span>
@@ -274,7 +277,7 @@ function adopt(s){
   state.students.forEach(normStudent);state.v=4;
 }
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(flush,500);}
+function save(){if(window._wiping)return;clearTimeout(saveT);saveT=setTimeout(flush,500);}
 function flush(){clearTimeout(saveT);return fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)}).catch(()=>toast('저장하지 못했어요. 프로그램이 켜져 있는지 확인하세요.'));}
 window.addEventListener('beforeunload',()=>{if(window._wiping)return;navigator.sendBeacon&&navigator.sendBeacon('/api/state',new Blob([JSON.stringify(state)],{type:'application/json'}));});
 
@@ -766,7 +769,7 @@ function sideHtml(){
   const t=state.tab,item=(s)=>{const on=t===s.tab;return `<div class="grp"><div class="gh ${on?'on':''}" data-act="tab" data-v="${s.tab}"><span class="lab"><span class="n ${s.n>7?'g':''}">${s.n}</span>${s.title}</span></div>${s.tab==='cca'&&(on||state.ui.open.cca)?['auto','club','career'].map(k=>`<div class="it ${on&&state.ui.ccaSub===k?'on':''}" data-act="ccaGo" data-v="${k}">${CCA[k].label}</div>`).join(''):''}</div>`;};
   return `<div class="grp"><div class="gh ${t==='home'?'on':''}" data-act="tab" data-v="home"><span class="lab">🏠&nbsp; 처음 화면</span></div></div>`+STEPS.map(item).join('');
 }
-function railHtml(){const L=[['home','🏠'],['roster','👤'],['hb','📝'],['obs','📚'],['cca','🎯'],['counsel','💬'],['set','⚙']];return L.map(([k,i])=>`<i class="${state.tab===k?'on':''}" data-act="tab" data-v="${k}" title="${(STEPS.find(s=>s.tab===k)||{title:'처음 화면'}).title}">${i}</i>`).join('');}
+function railHtml(){const L=[['home','🏠'],['set','⚙']];return L.map(([k,i])=>`<i class="${state.tab===k?'on':''}" data-act="tab" data-v="${k}" title="${(STEPS.find(s=>s.tab===k)||{title:'처음 화면'}).title}">${i}</i>`).join('');}
 function render(){
   CLIP.length=0;
   $('schoolPill').textContent=state.office||'교육청 선택 전';
@@ -1111,7 +1114,12 @@ function vSet(){
    <textarea id="stdPaste" rows="3" placeholder="[6국07-01] 성취기준 내용… (한 줄에 하나)"></textarea>
    <div class="row"><button class="btn line" data-act="addStd">추가</button><button class="btn line sm" data-act="clearStd">추가한 것 지우기</button></div></div>
   <div class="panel"><h4>데이터</h4><p class="hint">모든 내용은 이 PC에만 저장돼요. 폴더: <span class="path">${esc(INFO?INFO.docsDir:'')}</span></p>
-   <div class="row"><button class="btn line" data-act="openDocs">폴더 열기</button><button class="btn red" data-act="wipe">학생 데이터만 지우기</button></div></div>
+   <div class="row"><button class="btn line" data-act="openDocs">폴더 열기</button><button class="btn red" data-act="wipe">학생 데이터만 지우기</button></div>
+   <p class="hint">학생 데이터만 지우기: 교육청·학년 설정은 남기고 학생 명단과 만든 문장만 지워요.</p></div>
+  <div class="danger" style="margin-bottom:14px"><h4 style="margin:0 0 8px;color:var(--red)">↺ 전체 데이터 초기화</h4>
+   <p class="hint">학생 명단, 만든 모든 문장, 단원·동아리·스포츠클럽·상담 기록, 교육청·학년 선택까지 모두 지우고 처음 실행한 상태로 되돌려요. AI 모델과 프로그램은 그대로 남아요.</p>
+   <label class="chk"><input type="checkbox" id="resetBackups"> 백업 파일도 모두 지우기 (체크하지 않으면 초기화 직전 백업을 하나 남겨요)</label>
+   <button class="btn red" data-act="resetAll" style="margin-top:6px">전체 데이터 초기화</button></div>
   <div class="danger"><h4 style="margin:0 0 8px;color:var(--red)">🗑 프로그램 전체 삭제</h4>
    <p class="hint">이 PC에서 생기부 도우미를 완전히 지워요. 지운 뒤에는 되돌릴 수 없어요.</p>
    <label class="chk"><input type="checkbox" id="unData" checked> 학생 데이터·백업·평가자료 폴더와 설정</label>
@@ -1119,7 +1127,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.2.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.3.0</p></div></div>`;
 }
 
 /* ======================================================================
@@ -1249,6 +1257,16 @@ const ACT={
     save();render();toast(n?`${n}개 추가`:'형식에 맞는 줄이 없어요');},
   clearStd:()=>{const cs=state.ui.stdSubj||subjects()[0];if(confirm('추가한 성취기준을 지울까요?')){delete state.customStd[cs];save();render();}},
   wipe:async()=>{if(confirm('학생 데이터를 모두 지울까요? (지우기 전에 백업을 한 번 남겨 둬요)')){await flush();await fetch('/api/backup',{method:'POST'});window._wiping=true;await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});location.reload();}},
+  resetAll:async()=>{
+    const delB=$('resetBackups').checked;
+    const typed=prompt(`모든 데이터를 지우고 처음 상태로 되돌릴까요?${delB?'\n백업 파일도 모두 지워져서 되돌릴 수 없어요.':'\n초기화 직전 백업은 하나 남겨 둬요.'}\n\n계속하려면 아래 칸에 초기화 라고 입력하세요.`);
+    if(typed===null)return;if(typed.trim()!=='초기화'){alert('"초기화"라고 입력해야 진행돼요.');return;}
+    clearTimeout(saveT);await flush();window._wiping=true;
+    try{const r=await fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({backups:delB})});if(!r.ok)throw new Error(await r.text());
+      const j=await r.json();alert(j.backup?'초기화했어요. 초기화 전 데이터는 백업 폴더에 남겨 뒀어요.':'초기화했어요.');}
+    catch(e){window._wiping=false;alert('초기화하지 못했어요: '+e.message);return;}
+    location.reload();
+  },
   uninstall:async()=>{
     const opt={data:$('unData').checked,model:$('unModel').checked,ollama:$('unOllama').checked,self:$('unSelf').checked};
     if(!Object.values(opt).some(Boolean)){alert('지울 항목을 하나 이상 고르세요.');return;}
