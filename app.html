@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.5.1">
+<meta name="app-version" content="2.6.0">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -260,7 +260,7 @@ function freshState(){return {v:4,office:'',grade:'6',cls:'1',year:String(new Da
   ui:{hbView:'one',obsSubj:'',obsSem:'1',finSubj:'',finSem:'1',ccaSub:'auto',stdSubj:'',open:{cca:true}}};}
 let state=freshState();
 let RULES=null,STD=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null,BENCH=null;
-function benchText(b){if(b.error)return '측정 실패: '+esc(b.error);const f=n=>n>=10?Math.round(n):n.toFixed(1);return `읽기 ${f(b.readTPS)}토큰/초 · 쓰기 <b>${f(b.writeTPS)}토큰/초</b> · 행발 1명 약 <b>${Math.max(1,Math.round(b.hbSec))}초</b>${b.loadSec>1?` (처음 불러오기 ${Math.round(b.loadSec)}초)`:''} · ${b.writeTPS<6?'<span style="color:var(--red)">많이 느려요 → 가벼운 모드 켜기 추천</span>':b.writeTPS<12?'보통':'빨라요'}`;}
+function benchText(b){if(b.error)return '측정 실패: '+esc(b.error);const f=n=>n>=10?Math.round(n):n.toFixed(1);return `읽기 ${f(b.readTPS)}토큰/초 · 쓰기 <b>${f(b.writeTPS)}토큰/초</b> · 행발 1명 약 <b>${Math.max(1,Math.round(b.hbSec))}초</b>${b.loadSec>1?` (처음 불러오기 ${Math.round(b.loadSec)}초)`:''} · ${b.writeTPS<6?`<span style="color:var(--red)">많이 느려요 → ${/gemma3/i.test(SETUP&&SETUP.model||'')?'가벼운 모드 켜기 추천':'가벼운 모델(Gemma 3 1B)로 바꾸기 추천'}</span>`:b.writeTPS<12?'보통':'빨라요'}`;}
 function newStudent(no){return {id:uid(),no,name:'',gender:'',checks:[],memo:'',hb:null,nu:[],sub:{},obs:{},fin:{},cca:{auto:{note:'',recs:[]},club:{clubId:'',note:'',recs:[]},career:{note:'',recs:[]}}};}
 function normStudent(x){
   x.nu=x.nu||[];x.sub=x.sub||{};x.obs=x.obs||{};x.fin=x.fin||{};x.checks=x.checks||[];x.memo=x.memo||'';x.gender=x.gender||'';
@@ -501,6 +501,16 @@ async function pollSetup(){
   setStatus();const box=$('setupBox');if(box)box.innerHTML=setupHtml();
   if(!aiReady()&&SETUP.stage!=='error'&&SETUP.stage!=='unsupported')setTimeout(pollSetup,1500);
   if(SETUP.stage==='unsupported'||SETUP.ready){try{SPEC=await getJSON('/api/spec');}catch(e){}const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}
+  if(aiReady())primeAI();
+}
+/* 첫 글자 대기 줄이기: 모든 요청 맨 앞에 붙는 [작성 규정](시스템 안내문)을 AI가 미리 읽어 두게 한다.
+   Ollama는 앞부분이 같은 요청이면 이미 읽은 부분을 다시 계산하지 않으므로, 이후 [만들기]는 학생별 내용만 읽으면 됨 */
+let PRIMED='';
+function primeAI(){
+  if(!aiReady()||busy||!state.office)return;
+  const key=(SETUP.model||'')+'|'+sysPrompt();if(PRIMED===key)return;PRIMED=key;
+  fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:state.settings.model||SETUP.model,messages:[{role:'system',content:sysPrompt()},{role:'user',content:'준비'}],temperature:0.1,max_tokens:1,stream:true})})
+    .then(r=>r.body&&r.body.getReader()).then(async rd=>{if(rd)for(;;){const x=await rd.read();if(x.done)break;}}).catch(()=>{PRIMED='';});
 }
 function specHtml(){
   if(!SPEC)return '<span class="hint">PC 사양을 확인하고 있어요…</span>';
@@ -844,6 +854,7 @@ function render(){
   $('whoText').textContent=state.office?`${state.year}학년도 ${state.grade}학년 ${state.cls}반 담임`:'';
   if(!state.office){$('side').innerHTML='';$('rail').innerHTML='';$('view').innerHTML=vWelcome();return;}
   $('side').innerHTML=sideHtml();$('rail').innerHTML=railHtml();
+  setTimeout(primeAI,1500); // 교육청·학년이 바뀌었으면 새 안내문을 미리 읽어 둠
   const v={home:vHome,roster:vRoster,hb:vHb,obs:vObs,fin:vFin,cca:vCca,sports:vSports,counsel:vCounsel,result:vResult,set:vSet}[state.tab]||vHome;
   $('view').innerHTML=v();setStatus();
 }
@@ -1169,9 +1180,9 @@ function vSet(){
   <div class="panel"><h4>AI</h4><div id="setupBox">${setupHtml()}</div>
    <p class="hint">지금 모델: <b>${esc((SETUP&&SETUP.model)||(INFO&&INFO.model)||'-')}</b> · 이 PC 안에서만 작동해요.</p>
    ${SPEC?`<div class="hint">이 PC 판정: <b>${esc(SPEC.spec.tierLabel)}</b> (램 ${SPEC.spec.ramGB.toFixed(0)}GB, ${SPEC.spec.cpus}스레드${SPEC.spec.vramGB>=1?`, 그래픽 ${SPEC.spec.vramGB.toFixed(0)}GB`:''}) · 추천 ${esc(SPEC.spec.modelLabel||'-')}</div>
-   <div class="row" style="margin:6px 0"><button class="btn line sm" data-act="pickModel" data-v="e2b">표준 모델로 (Gemma 4 E2B QAT · 2.6GB)</button><button class="btn line sm" data-act="pickModel" data-v="e4b" ${SPEC.spec.ramGB>0&&SPEC.spec.ramGB<15?'disabled title="램 16GB 이상에서만"':''}>고성능 모델로 (Gemma 4 E4B QAT · 4.2GB · 문장 품질↑)</button></div>
-   ${SPEC.spec.tier==='low'?'<div class="warn">이 PC는 저사양이라 표준 모델이 느릴 수 있어요. [속도 측정]을 해 보고 너무 느리면 가벼운 모드를 켜 보세요.</div>':''}
-   <div class="hint">바꾸면 새 모델을 내려받고, 다 받으면 예전 모델은 지워서 공간을 비워요.</div>`:''}
+   <div class="hint" style="font-weight:700;color:#333;margin-top:8px">AI 모델 고르기</div>
+   <div class="row" style="margin:4px 0"><span class="seg">${[['auto','자동 (PC 성능에 맞게 · 추천)'],['e2b','Gemma 4 E2B · 2.6GB · 문장 좋음'],['g3','Gemma 3 1B · 1GB · 빠름']].map(([k,l])=>{const cur=SPEC.current||'';const on=k==='auto'?!SPEC.pinned:(SPEC.pinned&&SPEC.models&&SPEC.models[k]&&SPEC.models[k].Tag.toLowerCase()===cur.toLowerCase());return `<button class="${on?'on':''}" data-act="pickModel" data-v="${k}">${l}</button>`;}).join('')}</span></div>
+   <div class="hint">· <b>Gemma 4 E2B</b>: 문장이 자연스럽고 규칙을 잘 지켜요. 램 16GB 또는 6코어 이상 PC에 알맞아요.<br>· <b>Gemma 3 1B</b>: 2~3배 빠르고 가벼워요. 대신 문장이 단순하고 가끔 어색해서 고쳐 쓰는 일이 늘 수 있어요. 램 8GB PC에 알맞아요.<br>바꾸면 새 모델을 내려받고, 다 받으면 쓰지 않는 모델은 지워서 공간을 비워요.<br><span style="color:#888">AI 모델은 Google Gemma예요. Gemma 4는 Apache 2.0, Gemma 3는 Gemma 이용약관(ai.google.dev/gemma/terms)에 따라 제공돼요.</span></div>`:''}
    <div class="row" style="margin-top:8px"><button class="btn line sm" data-act="bench">⏱ 속도 측정</button><span class="hint" style="margin:0" id="benchOut">${BENCH?benchText(BENCH):'이 PC에서 AI가 얼마나 빠른지 재 봐요 (30초~2분)'}</span></div>
    <div class="hint" style="font-weight:700;color:#333;margin-top:10px">가벼운 모드 (저사양 PC용)</div>
    <div class="row"><span class="seg">${[['auto','자동'],['on','켜기'],['off','끄기']].map(([k,l])=>`<button class="${LITE.mode===k?'on':''}" data-act="liteMode" data-v="${k}">${l}</button>`).join('')}</span>
@@ -1197,7 +1208,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.5.1</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.6.0</p></div></div>`;
 }
 
 /* ======================================================================
@@ -1317,7 +1328,7 @@ const ACT={
   openDocs:()=>fetch('/api/open?what=docs',{method:'POST'}),
   restore:()=>{const f=$('fileRestore');f.onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const j=JSON.parse(await file.text());if(!Array.isArray(j.students))throw 0;if(!confirm(`${j.students.length}명의 백업으로 바꿀까요?`))return;adopt(j);await flush();location.reload();}catch(err){alert('백업 파일을 읽을 수 없어요.');}};f.click();},
   bench:async()=>{const o=$('benchOut');if(!aiReady()){toast('AI를 먼저 준비해야 해요');return;}o.textContent='재는 중… (처음엔 모델을 불러오느라 더 걸려요)';try{const r=await fetch('/api/bench');if(!r.ok)throw new Error(await r.text());BENCH=await r.json();}catch(e){BENCH={error:e.message};}const o2=$('benchOut');if(o2)o2.innerHTML=benchText(BENCH);},
-  pickModel:async el=>{const k=el.dataset.v;if(!confirm(k==='e4b'?'고성능 모델(약 4.2GB)을 내려받을까요? 문장 품질은 좋아지지만 만드는 속도는 조금 느려질 수 있어요.':'표준 모델(약 2.6GB)로 바꿀까요?'))return;
+  pickModel:async el=>{const k=el.dataset.v;if(!confirm({auto:'PC 성능에 맞는 모델을 자동으로 쓸까요? (필요하면 새로 내려받아요)',e2b:'Gemma 4 E2B(약 2.6GB)를 쓸까요? 문장은 자연스럽지만 저사양 PC에서는 느릴 수 있어요.',g3:'Gemma 3 1B(약 1GB)를 쓸까요? 2~3배 빠르지만 문장이 단순할 수 있어요.'}[k]))return;
     const r=await fetch('/api/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k})});if(!r.ok){alert(await r.text());return;}
     SETUP=null;toast('모델을 준비하고 있어요. 처음 화면에서 진행 상황을 볼 수 있어요.');setTimeout(pollSetup,600);state.tab='home';render();},
   liteMode:async el=>{try{LITE=await (await fetch('/api/lite',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:el.dataset.v})})).json();}catch(e){}render();toast(LITE.on?'가벼운 모드를 켰어요':'가벼운 모드를 껐어요');},
