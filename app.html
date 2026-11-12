@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.6.0">
+<meta name="app-version" content="2.8.0">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -157,6 +157,10 @@ dialog::backdrop{background:rgba(20,30,50,.35)}
 .file{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:3px 6px;border-radius:3px;background:var(--bg);margin-top:3px}
 .file .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .danger{border:1px solid #f0b7b3;background:#fff8f7;border-radius:4px;padding:14px}
+.kwrow{display:flex;gap:8px;align-items:flex-start;margin:4px 0}.kwlab{flex:0 0 92px;font-size:12.5px;color:#555;padding-top:5px;font-weight:600}.kwrow .chips{flex:1}
+.cat.area>h5{font-size:14px}.chip.edit{cursor:default}.chip.edit i{font-style:normal;margin-left:5px;color:#888;cursor:pointer;font-size:12px}.chip.edit i:hover{color:var(--red)}
+.chip.add{border-style:dashed;color:var(--blue);background:#fff}.chip.add.neg{color:var(--red)}.btn.on,.btn.line.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.outrow td{color:#aaa;background:#f6f6f6}.outrow input,.outrow select{opacity:.5}
 .chk{display:flex;gap:6px;align-items:center;font-size:13.5px;margin:4px 0;cursor:pointer}
 </style>
 </head>
@@ -188,27 +192,7 @@ dialog::backdrop{background:rgba(20,30,50,.35)}
 const OFFICES=["서울특별시교육청","부산광역시교육청","대구광역시교육청","인천광역시교육청","광주광역시교육청","대전광역시교육청","울산광역시교육청","세종특별자치시교육청","경기도교육청","강원특별자치도교육청","충청북도교육청","충청남도교육청","전북특별자치도교육청","전라남도교육청","경상북도교육청","경상남도교육청","제주특별자치도교육청"];
 const SUBJ_ORDER=['국어','사회','도덕','수학','과학','실과','체육','음악','미술','영어','바른 생활','슬기로운 생활','즐거운 생활'];
 const SEM={'1':'1학기','2':'2학기'};
-const CATS=[
- {id:'study',label:'학습 태도',pos:['수업에 집중함','적극적으로 발표함','궁금한 것을 질문함','과제를 성실히 해결함','탐구심이 강함','꼼꼼하게 정리함','창의적 아이디어가 많음','모둠 활동에서 역할을 잘 수행함','배운 것을 친구에게 잘 설명함','끈기 있게 문제를 해결함','자기 생각을 글로 잘 표현함','자료를 찾아 활용하는 능력이 좋음'],neg:['집중 시간이 짧음','과제 제출이 늦음','발표를 어려워함','기초학력 보충이 필요함','글씨·정리가 미흡함','어려운 과제를 쉽게 포기함']},
- {id:'peer',label:'교우 관계',pos:['친구를 잘 배려함','갈등을 중재함','리더십이 있음','친구들에게 신뢰받음','소외된 친구를 챙김','양보를 잘함','협력을 잘함','후배·동생을 잘 돌봄'],neg:['친구와 갈등이 잦음','교우 관계가 좁음','말이 거칠 때가 있음','자기주장이 강함','장난이 지나칠 때가 있음']},
- {id:'mind',label:'성격·정서',pos:['밝고 명랑함','차분하고 신중함','감정 조절을 잘함','자신감이 있음','유머 감각이 있음','공감 능력이 뛰어남','긍정적임','정직함','호기심이 많음'],neg:['소극적이고 수줍음이 많음','감정 기복이 있음','실수에 쉽게 위축됨','쉽게 화를 냄','타인의 시선을 많이 의식함']},
- {id:'life',label:'생활 습관·책임감',pos:['규칙을 잘 지킴','1인 1역을 성실히 수행함','정리정돈을 잘함','예절이 바름','시간 약속을 잘 지킴','학급 일에 자발적으로 참여함','공공질서를 잘 지킴','환경 보호를 실천함'],neg:['준비물을 자주 빠뜨림','정리정돈이 미흡함','지각이 잦음','규칙 준수가 부족함','수업 중 잡담이 많음']},
- {id:'talent',label:'특기·관심 분야',pos:['운동','미술','음악','글쓰기','독서','수학','과학 탐구','컴퓨터·코딩','만들기','외국어','요리','봉사·나눔','역사','토론'],neg:[]}
-];
-const INTEG={pos:['규칙을 잘 지킴','주변에 호기심이 많음','놀이에 즐겁게 참여함','만들기를 좋아함','친구와 협력함','표현 활동에 적극적임','관찰을 꼼꼼히 함','자기 생각을 잘 말함','노래와 율동을 즐김','정리정돈을 잘함'],neg:['활동에 집중하는 시간이 짧음','발표를 부끄러워함','도구 사용이 서툶','친구와 다툼이 있음']};
-const SUBJ_TRAITS={
- '국어':{pos:['발표를 조리 있게 함','글을 읽고 핵심을 잘 파악함','자기 생각을 글로 잘 표현함','어휘력이 풍부함','독서를 즐김','토의·토론에 적극적임','문학 작품을 깊이 있게 감상함','맞춤법을 정확히 지킴','창의적인 표현을 잘함','남의 말을 주의 깊게 들음'],neg:['글쓰기를 어려워함','발표에 자신감이 부족함','맞춤법 실수가 잦음','긴 글 읽기를 어려워함']},
- '수학':{pos:['계산이 정확하고 빠름','개념 이해가 깊음','풀이 과정을 논리적으로 설명함','다양한 방법으로 문제를 해결함','도형·공간 감각이 좋음','자료 정리와 그래프 해석을 잘함','어려운 문제에 끈기 있게 도전함','친구에게 풀이를 잘 설명함','실생활 문제에 수학을 적용함'],neg:['계산 실수가 잦음','서술형 문제를 어려워함','기초 연산 보충이 필요함','문장제 이해를 어려워함']},
- '사회':{pos:['지도와 자료 해석을 잘함','역사에 관심이 많음','사회 현상을 비판적으로 생각함','조사 학습을 꼼꼼히 함','근거를 들어 주장함','시사에 관심이 많음','발표 자료를 잘 만듦','인권과 민주주의 가치를 존중함'],neg:['용어 이해를 어려워함','자료 정리가 미흡함','역사 흐름 파악을 어려워함']},
- '과학':{pos:['실험에 적극적으로 참여함','관찰을 꼼꼼히 기록함','가설을 세우고 검증함','과학 원리를 생활과 연결함','탐구 결과를 잘 발표함','실험 도구를 안전하게 다룸','호기심이 많아 질문이 많음','모형을 정교하게 만듦'],neg:['실험 보고서 작성을 어려워함','실험 안전 수칙 지도가 필요함','개념 정리가 미흡함']},
- '도덕':{pos:['도덕적 판단이 바름','타인의 입장에서 생각함','자신의 생활을 성찰함','배운 가치를 실천함','다양한 관점을 존중함','공동체 문제에 관심이 많음','봉사하는 마음이 큼'],neg:['실천으로 이어지는 노력이 필요함','자기 생각 표현을 어려워함']},
- '실과':{pos:['손재주가 좋아 만들기를 잘함','코딩·알고리즘 이해가 빠름','요리·생활 실습에 적극적임','도구를 안전하게 사용함','생활 속 문제를 창의적으로 해결함','동식물을 정성껏 기름','디지털 기기를 능숙하게 다룸','진로 탐색에 관심이 많음'],neg:['실습 정리정돈이 미흡함','도구 사용이 서툶']},
- '체육':{pos:['운동 기능이 뛰어남','규칙을 잘 지키고 페어플레이함','팀원과 협력을 잘함','끈기 있게 연습함','표현 활동에 적극적임','체력이 좋음','안전 수칙을 잘 지킴','친구를 응원하고 격려함'],neg:['운동에 자신감이 부족함','승부에 지나치게 집착함','기초 체력 향상이 필요함']},
- '음악':{pos:['정확한 음정으로 노래함','악기 연주를 잘함','리듬감이 좋음','감상 소감을 풍부하게 표현함','창작 활동에 적극적임','합주·합창에서 조화를 이룸','국악에 관심이 많음'],neg:['악보 읽기를 어려워함','노래 부르기를 부끄러워함']},
- '미술':{pos:['색채 감각이 뛰어남','표현이 창의적임','세밀하게 묘사함','다양한 재료를 잘 활용함','작품을 깊이 있게 감상함','끝까지 정성을 다해 완성함','디지털 매체를 활용함'],neg:['작품 완성에 시간이 오래 걸림','표현에 자신감이 부족함']},
- '영어':{pos:['발음이 정확함','듣기 이해가 빠름','자신 있게 말함','단어를 잘 익힘','문장을 읽고 뜻을 잘 파악함','역할놀이에 적극적임','쓰기를 정확하게 함','영어권 문화에 관심이 많음'],neg:['영어 말하기를 부끄러워함','단어 암기를 어려워함','쓰기를 어려워함']},
- '바른 생활':INTEG,'슬기로운 생활':INTEG,'즐거운 생활':INTEG
-};
+/* 행발·교과 특성 키워드는 data/keywords.json (자동 업데이트) */
 const OPEN_HB=['학생의 가장 두드러진 강점으로 첫 문장을 시작함','교사가 관찰한 구체적인 장면으로 첫 문장을 시작함','친구들과 어울리는 모습으로 첫 문장을 시작함','학습에 임하는 태도로 첫 문장을 시작함','성격과 정서적 특징으로 첫 문장을 시작함','학급 생활과 책임감으로 첫 문장을 시작함','관심 분야나 특기로 첫 문장을 시작함','한 해 동안 성장한 모습으로 첫 문장을 시작함'];
 const OPEN_NU=['관찰한 행동으로 바로 시작함','상황의 배경을 짧게 밝히고 시작함','행동이 주변에 준 영향을 중심으로 씀','교사의 지도와 학생의 반응을 중심으로 씀'];
 const OBS_FOCUS=['활동 결과물의 특징','문제를 해결하는 방식','친구와 협력하는 모습','자기 생각을 표현하는 방식','개념을 이해하는 깊이','실생활과 연결하는 모습','끈기와 태도','창의적인 아이디어'];
@@ -251,19 +235,20 @@ const CIRC='①②③④⑤⑥⑦⑧⑨';
 /* ======================================================================
    상태
    ====================================================================== */
-const DEF_SETTINGS={model:'',temperature:0.8,maxTokens:2400,len:{hb:400,nu:150},docSim:0.7,retries:3,schoolRules:''};
+const DEF_SETTINGS={model:'',temperature:0.8,maxTokens:2400,len:{hb:400,nu:150},lenMode:'char',docSim:0.7,retries:3,schoolRules:''};
 function freshState(){return {v:4,office:'',grade:'6',cls:'1',year:String(new Date().getFullYear()),settings:JSON.parse(JSON.stringify(DEF_SETTINGS)),students:[],cur:null,tab:'home',
   units:{},obsCount:20,customStd:{},lastExport:'',
   cca:{auto:{schedule:CCA.auto.def,count:5},club:{clubs:[],schedule:'',count:5},career:{schedule:CCA.career.def,count:5}},
   sports:{sport:'',sessions:20,target:'',period:'',note:'',rows:[]},
   counsel:{rows:[],opt:{count:20,from:'',to:'',cats:['학업','진로','성격','대인관계','컴퓨터 및 스마트폰 과사용','기타'],parent:false,minFrom:10,minTo:30,media:'면담',sel:[]}},
+  kw:{add:{},del:[],ren:{}},
   ui:{hbView:'one',obsSubj:'',obsSem:'1',finSubj:'',finSem:'1',ccaSub:'auto',stdSubj:'',open:{cca:true}}};}
 let state=freshState();
-let RULES=null,STD=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null,BENCH=null;
+let RULES=null,STD=null,KWB=null,INFO=null,SETUP=null,LITE={mode:'auto',on:false},SPEC=null,BENCH=null;
 function benchText(b){if(b.error)return '측정 실패: '+esc(b.error);const f=n=>n>=10?Math.round(n):n.toFixed(1);return `읽기 ${f(b.readTPS)}토큰/초 · 쓰기 <b>${f(b.writeTPS)}토큰/초</b> · 행발 1명 약 <b>${Math.max(1,Math.round(b.hbSec))}초</b>${b.loadSec>1?` (처음 불러오기 ${Math.round(b.loadSec)}초)`:''} · ${b.writeTPS<6?`<span style="color:var(--red)">많이 느려요 → ${/gemma3/i.test(SETUP&&SETUP.model||'')?'가벼운 모드 켜기 추천':'가벼운 모델(Gemma 3 1B)로 바꾸기 추천'}</span>`:b.writeTPS<12?'보통':'빨라요'}`;}
-function newStudent(no){return {id:uid(),no,name:'',gender:'',checks:[],memo:'',hb:null,nu:[],sub:{},obs:{},fin:{},cca:{auto:{note:'',recs:[]},club:{clubId:'',note:'',recs:[]},career:{note:'',recs:[]}}};}
+function newStudent(no){return {id:uid(),no,name:'',gender:'',checks:[],kws:[],memo:'',hb:null,nu:[],sub:{},obs:{},fin:{},cca:{auto:{note:'',recs:[]},club:{clubId:'',note:'',recs:[]},career:{note:'',recs:[]}}};}
 function normStudent(x){
-  x.nu=x.nu||[];x.sub=x.sub||{};x.obs=x.obs||{};x.fin=x.fin||{};x.checks=x.checks||[];x.memo=x.memo||'';x.gender=x.gender||'';
+  x.nu=x.nu||[];x.sub=x.sub||{};x.obs=x.obs||{};x.fin=x.fin||{};x.checks=x.checks||[];x.memo=x.memo||'';x.gender=x.gender||'';if(!Array.isArray(x.kws))x.kws=null;
   x.cca=x.cca||{};['auto','club','career'].forEach(k=>{x.cca[k]=x.cca[k]||{note:'',recs:[]};x.cca[k].recs=x.cca[k].recs||[];x.cca[k].note=x.cca[k].note||'';});
   delete x.levels;delete x.gyo;delete x.gyoMemo;if(x.hb)delete x.hb.reviewed;x.nu.forEach(n=>delete n.reviewed);
 }
@@ -271,7 +256,7 @@ function adopt(s){
   if(!s||!Array.isArray(s.students))return;
   const f=freshState();
   state={...f,...s,settings:{...f.settings,...(s.settings||{}),len:{...f.settings.len,...((s.settings||{}).len||{})}},ui:{...f.ui,...(s.ui||{})},
-    cca:{...f.cca,...(s.cca||{})},sports:{...f.sports,...(s.sports||{})},counsel:{rows:(s.counsel||{}).rows||[],opt:{...f.counsel.opt,...((s.counsel||{}).opt||{})}},units:s.units||{}};
+    kw:{add:{},del:[],ren:{},...(s.kw||{})},cca:{...f.cca,...(s.cca||{})},sports:{...f.sports,...(s.sports||{})},counsel:{rows:(s.counsel||{}).rows||[],opt:{...f.counsel.opt,...((s.counsel||{}).opt||{})}},units:s.units||{}};
   delete state.plan;
   if(!state.grade&&s.settings&&s.settings.grade)state.grade=String(s.settings.grade);
   ['hb','obs','fin','cca','sports','counsel','result','set','roster','home'].includes(state.tab)||(state.tab='home');
@@ -288,7 +273,8 @@ window.addEventListener('beforeunload',()=>{if(window._wiping)return;navigator.s
 const $=id=>document.getElementById(id);
 const uid=()=>Math.random().toString(36).slice(2,10);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const S=()=>[...state.students].sort((a,b)=>a.no-b.no);
+const SA=()=>[...state.students].sort((a,b)=>a.no-b.no); // 전출생 포함 전체
+const S=()=>SA().filter(s=>!s.out);                       // 지금 반 학생 (전출생 제외)
 const curS=()=>state.students.find(s=>s.id===state.cur)||null;
 const byId=id=>state.students.find(s=>s.id===id);
 const dname=s=>s?(s.name||`${s.no}번`):'';
@@ -380,7 +366,7 @@ function uniqBlock(hints,avoid){
   if(!L.length)return '[개별화] 이 학생만의 특징이 드러나도록 씁니다.';
   return `[다른 학생과 겹치지 않게] 같은 반 다른 학생과 똑같은 문장이 하나라도 있으면 안 됩니다. 다음은 이미 쓰인 표현이니 피하세요.\n${L.slice(0,16).map(x=>'- '+x).join('\n')}`;
 }
-function endDot(t){t=fixDots(oneLine(normPunct(t)).replace(/^[\s\-•·*\d.)\]]+(?=[가-힣A-Za-z(])/,'').trim());if(t&&!/[.!?]$/.test(t))t+='.';return t;}
+function endDot(t){t=fixStyle(fixDots(oneLine(normPunct(t))).replace(/^[\s\-•·*\d.)\]]+(?=[가-힣A-Za-z(])/,'').trim());if(t&&!/[.!?]$/.test(t))t+='.';return t;}
 /* ======================================================================
    이상한 글자·마침표 자동 검사
    ====================================================================== */
@@ -416,6 +402,67 @@ function fixDots(t){
     return x;
   }).join('\n');
 }
+/* ----- 생기부 말투 자동 교정 (작은 모델이 '~합니다'·'이 학생은'·'응원합니다'로 쓰는 버릇) ----- */
+function _jong(ch){const c=ch.charCodeAt(0)-0xAC00;return c>=0&&c<11172?c%28:-1;}
+function _setJong(ch,j){const c=ch.charCodeAt(0)-0xAC00;return String.fromCharCode(0xAC00+c-c%28+j);}
+const END_RULES=[
+  [/(하였|했)(습니다|다)$/,'함'],[/합니다$|한다$/,'함'],
+  [/(되었|됐)(습니다|다)$/,'됨'],[/(주었|줬)(습니다|다)$/,'줌'],[/됩니다$|된다$/,'됨'],
+  [/있(습니다|다)$/,'있음'],[/없(습니다|다)$/,'없음'],
+  [/보(입니다|인다|였습니다|였다)$/,'보임'],
+  [/(입니다|이다)$/,'임'],[/(이었|였)(습니다|다)$/,'였음'],
+  [/습니다$/,'음'],
+];
+function nounEnd(x){
+  for(const [re,to] of END_RULES)if(re.test(x))return x.replace(re,to);
+  let m=x.match(/([가-힣])니다$/); // ~ㅂ니다 → ~ㅁ (보여줍니다 → 보여줌)
+  if(m&&_jong(m[1])===17)return x.slice(0,-3)+_setJong(m[1],16);
+  m=x.match(/([가-힣])다$/);      // ~ㄴ다/~다 → ~ㅁ/~음 (보여준다 → 보여줌, 뛰어나다 → 뛰어남)
+  if(m&&m[1]!=='니'){const j=_jong(m[1]);
+    if(j===4||j===0)return x.slice(0,-2)+_setJong(m[1],16);
+    if(j>0)return x.slice(0,-1)+'음';}
+  return x;
+}
+const STYLE_DROP=/응원|바랍니다|바람$|기대(됩니다|된다|됨|합니다|한다|함)|무궁무진|축하|칭찬합니다|화이팅|파이팅|(할|될|있을|갈|낼) 것(입니다|이다|임)/;
+function fixStyle(t){
+  t=(t||'').replace(/(^|[\s.])이 학생(은|이|의|에게|과|도)?\s+/g,'$1').replace(/(^|[.!?]\s+)(이 |해당 )?학생(은|이|들은)\s+/g,'$1').replace(/(^|\s)그(녀)?(의|는|가|를|에게)\s+/g,'$1');
+  const out=[];
+  for(let x of t.split(/(?<=[.!?])\s+/)){
+    const p=(x.match(/[.!?]+$/)||[''])[0];let c=x.slice(0,x.length-p.length).trim();if(!c)continue;
+    c=nounEnd(c);
+    out.push({c:c+(p?'.':''),drop:STYLE_DROP.test(c)});
+  }
+  const keep=out.filter(o=>!o.drop);
+  return (keep.length?keep:out).map(o=>o.c).join(' ').replace(/\s{2,}/g,' ').trim();
+}
+/* 요청에 있던 꼬리표를 AI가 그대로 따라 쓴 것 지우기: "농구 동아리 활동 누가기록 1 …", "나의 흥미와 적성 알아보기 …" */
+function stripEcho(t,labels){
+  t=oneLine(t||'').replace(/^\s*[-•·*]\s*/,'').replace(/^\s*\d+\s*[|.):]\s*/,'').replace(/^\s*\d{4}-\d{2}-\d{2}\s*[|·:]?\s*/,'');
+  t=t.replace(/^.{0,40}?누가\s*기록\s*\d*\s*[|.:)]?\s*/,'').replace(/^\s*\d+\s*[|.):]?\s+/,'');
+  for(let k=0;k<3;k++){const before=t;
+    for(const l of (labels||[]).filter(x=>x&&x.trim().length>=2)){
+      const L=l.trim();if(t.startsWith(L))t=t.slice(L.length).replace(/^\s*(활동|시간)?\s*[|:,·\-]?\s*/,'');
+    }
+    t=t.replace(/^\S{1,12}\s*동아리\s*(활동)?\s*[|:,·\-]?\s*/,'');
+    if(t===before)break;}
+  return t.trim();
+}
+/* 교과 관찰 기록다운지: 학생이 한 활동이 드러나야 함 (작은 모델이 시·이야기 문장을 직접 지어내는 것 거르기) */
+const ACT_WORD=/표현|발표|참여|이해|설명|작성|활용|탐구|해결|제시|분석|비교|정리|파악|찾아|찾음|읽|쓰기|씀|말하|들으|듣고|감상|협력|토의|토론|조사|관찰|실험|계산|그리|만들|노력|수행|익히|적용|구성|완성|소개|나누|실천|연습|측정|예측|추론|질문|답|기록|창작|꾸미|요약|해석|구별|구분|판단|제안|계획|연주|부르|동작|시범|공유|발견|이야기함|낭송|암송|따라|살펴|알아|확인|구하|나타냄|나타내|정확|능숙|성실|적극|뛰어|우수|돋보|향상|성장|태도|모습|능력|역량/;
+const NARR=/(^|\s)(그|그녀|그들)(의|는|가|를|에게)\s|마치|덧없|아련|속삭|피어났|감돌|잠겼|펼쳐진|흘러갔|떨어진 곳|(었|았|였|졌|났)다\.?$|듯하다\.?$|ㄴ다\.?$/;
+function ccaOk(t){return normT(t).length>=12&&/(함|됨|임|음|봄|짐|줌|남|옴|움|힘|룸|씀|춤|짐|림|김|침|냄|켬|섬|썸|짐|싶음)\.$/.test((t||'').trim());}
+function obsOk(raw){const x=oneLine(raw||'');return normT(x).length>=12&&ACT_WORD.test(x)&&!NARR.test(x);}
+/* 행발 분량: 글자 수 / NEIS 바이트 / 문장 수 중 하나 */
+function hbTarget(){
+  const st=state.settings,n=+st.len.hb||400,m=st.lenMode||'char';
+  if(m==='byte')return {prompt:`NEIS 기준 약 ${n}바이트 이내 (한글 약 ${Math.floor(n/3)}자)`,max:Math.floor(n/3),bytes:n,label:`${n}바이트`};
+  if(m==='sent')return {prompt:`${n}문장`,sents:n,label:`${n}문장`};
+  return {prompt:`공백 포함 약 ${n}자`,max:n,label:`${n}자`};
+}
+/* 목표 분량보다 많이 길면 끝 문장부터 덜어냄 */
+function trimLen(t,max){if(!max)return t;
+  if(typeof max==='object'){if(max.sents){const ss=t.split(/(?<=[.!?])\s+/);return ss.slice(0,max.sents).join(' ');}
+    if(max.bytes){const ss=t.split(/(?<=[.!?])\s+/);while(ss.length>2&&neisBytes(ss.join(' '))>max.bytes)ss.pop();return ss.join(' ');}max=max.max;if(!max)return t;}const ss=t.split(/(?<=[.!?])\s+/);while(ss.length>2&&ss.join(' ').length>max*1.1)ss.pop();return ss.join(' ');}
 /* 끝 문장이 중간에 끊겼는지 */
 function truncated(t){const c=(t||'').trim().replace(/[.!?]+$/,'');return !!c&&!ENDOK.test(c)&&TRUNC.test(c);}
 /* 여러 문장 글에서 끊긴 마지막 문장은 빼기 */
@@ -444,12 +491,12 @@ async function fixText(text,idx,ctx){
   return {text,removed};
 }
 /* 긴 글(행발·누가기록) 만들기 */
-async function genUnique(build,others,onDelta){
+async function genUnique(build,others,onDelta,maxLen){
   let best=null,avoid=[];const R=Math.max(0,+state.settings.retries||0),idx=makeIdx(others);
   for(let a=0;a<=R;a++){
     if(stopFlag)break;
     let text=await chat(build(a,avoid),onDelta);if(!text)continue;
-    text=dropTrunc(fixDots(oneLine(text)));
+    text=trimLen(fixStyle(dropTrunc(fixDots(oneLine(text)))),maxLen);
     text=dedupeOwn(text);
     const d=dupIn(idx,text),sim=maxSim(text,others);
     if(!d.length&&sim.m<state.settings.docSim)return {text,flag:''};
@@ -544,6 +591,7 @@ async function chat(messages,onDelta,opts={}){
     if(a>0){ // 다시 만들 때: 한국어로만 쓰라고 한 번 더 강조하고 온도를 낮춤
       msgs=messages.map((m,i)=>i===messages.length-1?{...m,content:m.content+`\n\n[중요] 반드시 한국어(한글)로만 쓰세요. 한자·일본어·러시아어 등 다른 나라 글자와 ${EN_OK?'불필요한 ':''}영어 단어를 쓰지 말고, 문장마다 마침표(.)로 끝내세요.`}:m);
     }
+    if(smallModel()&&!opts.noStyle)msgs=msgs.map((m,i)=>i===msgs.length-1&&m.role==='user'?{...m,content:m.content+STYLE_TAIL}:m);
     text=normPunct(await chatOnce(msgs,onDelta,{...opts,temperature:a?Math.min(base,0.6)-0.1*(a-1):base}));
     if(!badText(text))return text;
     QSTAT.retry++;
@@ -552,6 +600,9 @@ async function chat(messages,onDelta,opts={}){
   return out;
 }
 const QSTAT={retry:0,strip:0};
+/* 작은 모델(Gemma 3 1B)은 앞쪽 규정을 잘 잊으므로, 요청 맨 끝에 말투 예시를 한 번 더 붙임 */
+function smallModel(){return /gemma3/i.test((SETUP&&SETUP.model)||state.settings.model||'');}
+const STYLE_TAIL=`\n\n[말투 - 꼭 지키기]\n· 모든 문장은 '~함.', '~임.', '~음.', '~됨.'처럼 명사형으로 끝냄 ('~합니다', '~입니다', '~한다' 금지)\n· '이 학생은', '그의', '그는' 같은 주어·대명사를 쓰지 않음\n· 응원, 기대, 칭찬 인사, 앞날 예측('~할 것임')을 쓰지 않고 관찰한 사실만 씀\n· 좋은 예: 수업 시간에 집중하여 자신의 생각을 조리 있게 발표함. 모둠 활동에서 친구의 의견을 존중하며 역할을 끝까지 해냄.`;
 async function chatOnce(messages,onDelta,opts={}){
   if(!aiReady())throw new Error('AI를 아직 준비하고 있어요. 처음 화면에서 진행 상태를 확인해 주세요.');
   ctrl=new AbortController();const st=state.settings;
@@ -574,11 +625,54 @@ async function chatOnce(messages,onDelta,opts={}){
    프롬프트
    ====================================================================== */
 function sysPrompt(){return `당신은 대한민국 초등학교 ${state.grade}학년 담임교사의 학교생활기록부 작성을 돕는 보조자입니다. 아래 [작성 규정]은 ${RULES?RULES.title:'학교생활기록부 기재요령'}${state.office?`과 ${state.office} 지침`:''}에 따른 것이니 반드시 지키세요.\n[작성 규정]\n${rulesText()}\n\n결과만 출력하고 설명, 제목, 머리말은 붙이지 마세요.`;}
-function obsText(s,ids){
-  const L=[];CATS.filter(c=>!ids||ids.includes(c.id)).forEach(c=>{
-    const p=s.checks.filter(k=>k.startsWith(c.id+'|pos|')).map(k=>k.split('|')[2]),n=s.checks.filter(k=>k.startsWith(c.id+'|neg|')).map(k=>k.split('|')[2]);
-    if(c.id==='talent'){if(p.length)L.push(`- 특기·관심 분야: ${p.join(', ')}`);return;}
-    if(p.length)L.push(`- ${c.label}(강점): ${p.join(', ')}`);if(n.length)L.push(`- ${c.label}(보완점): ${n.join(', ')}`);});
+/* ======================================================================
+   키워드: 기본값(keywords.json, 자동 업데이트) + 선생님 수정분(state.kw)만 따로 저장
+   - 학생 선택은 문구가 아니라 고정 id로 저장 → 기본 문구가 업데이트돼도 선택이 유지됨
+   ====================================================================== */
+function kwFix(){const k=state.kw=state.kw||{};k.add=k.add||{};k.del=k.del||[];k.ren=k.ren||{};return k;}
+function kwEff(itemId,base){ // 한 항목의 실제 키워드 목록
+  const k=kwFix();
+  return [...(base||[]).filter(x=>!x.deprecated&&!k.del.includes(x.id)).map(x=>({...x,t:k.ren[x.id]||x.t})),...(k.add[itemId]||[]).map(x=>({...x,user:true}))];
+}
+function kwAreas(){return ((KWB&&KWB.areas)||[]).map(a=>({...a,items:a.items.map(it=>({...it,kw:kwEff(it.id,it.kw)}))}));}
+function subjBase(subj){const S0=(KWB&&KWB.subjects)||{};let x=S0[subj]||S0['통합'];if(x&&x.ref)x=S0[x.ref];return x||{id:'none',kw:[]};}
+function subjItemId(subj){return 'subj.'+subjBase(subj).id;}
+function subjKw(subj){const b=subjBase(subj);return kwEff('subj.'+b.id,b.kw);}
+let KWMAP=null;
+function kwIndex(){ // id → 키워드 (지운 것·예전 것 포함)
+  const m={},k=kwFix(),items={};
+  ((KWB&&KWB.areas)||[]).forEach(a=>a.items.forEach(it=>{items[it.id]={label:it.label,area:a.id,interest:!!it.interest};it.kw.forEach(x=>m[x.id]={...x,t:k.ren[x.id]||x.t,item:it.id,...items[it.id]});}));
+  Object.values((KWB&&KWB.subjects)||{}).forEach(v=>(v.kw||[]).forEach(x=>m[x.id]={...x,t:k.ren[x.id]||x.t,item:'subj.'+v.id}));
+  Object.entries(k.add).forEach(([iid,L])=>L.forEach(x=>m[x.id]={...x,item:iid,...(items[iid]||{}),user:true}));
+  return KWMAP=m;
+}
+function kwLive(id){const k=kwFix(),x=(KWMAP||kwIndex())[id];return x&&!k.del.includes(id)&&!x.deprecated?x:null;}
+/* 예전 버전(문구로 저장)의 체크를 id로 옮김. 기본 목록에 없는 문구는 선생님 키워드로 추가해서 잃어버리지 않게 함 */
+const OLD_CAT_ITEM={study:'learn.att',peer:'char.friend',mind:'char.pos',life:'life.rule',talent:'learn.like'};
+function migrateKw(){
+  if(!KWB)return false;let changed=false;const k=kwFix();
+  const findIn=(iid,base,t,neg)=>{let f=kwEff(iid,base).find(x=>x.t===t);if(!f){f={id:'u_'+uid(),t,...(neg?{neg:true}:{})};(k.add[iid]=k.add[iid]||[]).push(f);}return f.id;};
+  const allBase=[];(KWB.areas||[]).forEach(a=>a.items.forEach(it=>allBase.push(it)));
+  state.students.forEach(st=>{
+    if(!Array.isArray(st.kws)){st.kws=[];
+      (st.checks||[]).forEach(c=>{const [cat,pol,...rest]=c.split('|'),t=rest.join('|');if(!t)return;
+        const hit=allBase.find(it=>kwEff(it.id,it.kw).some(x=>x.t===t));
+        const it=hit||allBase.find(i=>i.id===OLD_CAT_ITEM[cat])||allBase[0];if(!it)return;
+        const id=findIn(it.id,it.kw,t,pol==='neg');if(!st.kws.includes(id))st.kws.push(id);});
+      changed=true;}
+    Object.entries(st.sub||{}).forEach(([sj,x])=>{if(Array.isArray(x.k))return;x.k=[];const b=subjBase(sj);
+      (x.t||[]).forEach(t=>{const id=findIn('subj.'+b.id,b.kw,t,false);if(!x.k.includes(id))x.k.push(id);});changed=true;});
+  });
+  kwIndex();if(changed)save();return changed;
+}
+/* AI에 넘길 관찰 내용: 영역 > 항목별 강점·보완점 */
+function obsText(s){
+  const L=[],sel=(s.kws||[]).map(kwLive).filter(Boolean);
+  kwAreas().forEach(a=>a.items.forEach(it=>{
+    const mine=sel.filter(x=>x.item===it.id);if(!mine.length)return;
+    if(it.interest){L.push(`- 관심 분야: ${mine.map(x=>x.t).join(', ')}`);return;}
+    const p=mine.filter(x=>!x.neg).map(x=>x.t),n=mine.filter(x=>x.neg).map(x=>x.t);
+    if(p.length)L.push(`- ${a.label}·${it.label}(강점): ${p.join(', ')}`);if(n.length)L.push(`- ${a.label}·${it.label}(보완점): ${n.join(', ')}`);}));
   return L.length?L.join('\n'):'- (체크된 항목 없음)';
 }
 const idxOf=s=>S().indexOf(s);
@@ -590,7 +684,7 @@ function hbMsgs(s,extra,others){
 ${obsText(s)}
 ${s.memo.trim()?`[교사 메모]\n${s.memo.trim()}\n`:''}[작성 방법] 1년 동안 관찰한 모습을 바탕으로 학생을 전체적으로 이해할 수 있게 종합합니다. 학습, 교우 관계, 인성·정서, 생활 습관을 고루 아우르되 장점을 중심으로 쓰고, 보완점은 성장 가능성과 함께 한 가지 이내로 담습니다.
 [서술 방식] ${OPEN_HB[(idxOf(s)+a*3)%OPEN_HB.length]}
-[분량] 공백 포함 약 ${state.settings.len.hb}자
+[분량] ${hbTarget().prompt}
 ${uniqBlock(hints,avoid)}${extra?`\n[추가 요청] ${extra}`:''}`}];
 }
 function nuMsgs(s,item,extra,others){
@@ -610,17 +704,17 @@ ${uniqBlock(hints,avoid)}${extra?`\n[추가 요청] ${extra}`:''}`}];
 const okey=(subj,sem)=>`${subj}|${sem}`;
 function unitsOf(subj,sem){return ((state.units[subj]||{})[sem]||'').split('\n').map(x=>x.trim()).filter(Boolean);}
 function slots(n,u){const base=Math.floor(n/u),ex=n%u;return Array.from({length:u},(_,i)=>base+(i<ex?1:0));}
-function subjInfo(s,subj){const x=s.sub[subj]||{t:[],lv:'',memo:''};x.t=x.t||[];return x;}
+function subjInfo(s,subj){const x=s.sub[subj]||{t:[],k:[],lv:'',memo:''};x.t=x.t||[];if(!Array.isArray(x.k))x.k=[];return x;}
 function subjTraitText(s,subj){
-  const x=subjInfo(s,subj),T=SUBJ_TRAITS[subj]||INTEG;
-  const p=x.t.filter(t=>T.pos.includes(t)),n=x.t.filter(t=>T.neg.includes(t));
+  const x=subjInfo(s,subj),sel=x.k.map(kwLive).filter(Boolean);
+  const p=sel.filter(k=>!k.neg).map(k=>k.t),n=sel.filter(k=>k.neg).map(k=>k.t);
   const L=[];if(x.lv)L.push(`- ${subj} 전반적 성취: ${{상:'우수함',중:'보통 수준',하:'노력이 필요함'}[x.lv]}`);
   if(p.length)L.push(`- ${subj} 강점: ${p.join(', ')}`);if(n.length)L.push(`- ${subj} 보완점: ${n.join(', ')}`);
   if(x.memo&&x.memo.trim())L.push(`- ${subj} 교사 메모: ${x.memo.trim()}`);
-  const st=s.checks.filter(k=>k.startsWith('study|')).map(k=>k.split('|')[2]);if(st.length)L.push(`- 평소 학습 태도: ${st.join(', ')}`);
+  const st=(s.kws||[]).map(kwLive).filter(k=>k&&k.item==='learn.att'&&!k.neg).map(k=>k.t);if(st.length)L.push(`- 평소 수업 태도: ${st.join(', ')}`);
   return L.length?L.join('\n'):'- (체크된 항목 없음, 일반적인 참여 모습으로 씀)';
 }
-function obsOthers(s,key){const L=[];state.students.forEach(x=>{if(x.id===s.id)return;(x.obs[key]||[]).forEach((r,i)=>L.push({name:`${dname(x)} ${i+1}번`,text:r.text,unit:r.unit}));});return L;}
+function obsOthers(s,key){const L=[];S().forEach(x=>{if(x.id===s.id)return;(x.obs[key]||[]).forEach((r,i)=>L.push({name:`${dname(x)} ${i+1}번`,text:r.text,unit:r.unit}));});return L;}
 function relStds(subj,units,k){
   const L=stdList(subj);if(L.length<=k)return L;
   const ug=grams(units.join(' ').replace(/^[\d\s.()\-~]+/gm,''),2);
@@ -636,10 +730,13 @@ ${subjTraitText(s,subj)}
 ${units.map((u,i)=>`${i+1}. ${u} — ${counts[i]}개`).join('\n')}
 [관련 성취기준]
 ${stds||'(없음)'}
-[작성 방법] 각 문장은 그 단원 수업에서 관찰한 이 학생의 구체적인 활동과 성취를 한 문장으로 씁니다. 예시: 비유적 표현(직유법, 은유법)을 활용하여 자신의 경험을 창의적인 시로 생동감 있게 표현함.
+[작성 방법] 각 문장은 그 단원 수업에서 관찰한 이 학생의 구체적인 활동과 성취를 '~함.'으로 끝나는 한 문장으로 씁니다. 시·이야기·작품 문장을 직접 지어 쓰지 말고, 학생이 무엇을 어떻게 했는지 기록합니다.
+좋은 예: 비유적 표현(직유법, 은유법)을 활용하여 자신의 경험을 창의적인 시로 생동감 있게 표현함. / 친구가 쓴 시에서 비유 표현을 찾아 그 효과를 조리 있게 설명함.
+나쁜 예: 덧없는 노래처럼 꿈을 꾸는 듯하다. (작품 문장을 지어낸 것이라 안 됨)
 문장마다 활동 장면과 표현이 서로 달라야 하고, 학생 특성이 자연스럽게 드러나야 합니다. 보완점은 노력하는 모습과 성장 가능성으로 씁니다. 이번 학생은 특히 '${OBS_FOCUS[idxOf(s)%OBS_FOCUS.length]}'이 잘 드러나게 씁니다.
 [출력 형식] 단원마다 "## 단원명" 한 줄을 쓰고, 그 아래에 정해진 개수만큼 한 줄에 한 문장씩 씁니다. 번호나 기호는 붙이지 않습니다.${avoidBlock(avoid)}`}];
 }
+let OBS_REJECT=0;
 function parseObs(text,units){
   const groups=units.map(()=>[]);let cur=-1;const loose=[];
   const nu=units.map(u=>normT(u.replace(/^[\d\s.()\-~]+/,'')));
@@ -648,7 +745,9 @@ function parseObs(text,units){
     const h=line.match(/^#{1,4}\s*(.+)$/)||line.match(/^\[(.+?)\]\s*$/);
     if(h){const n=normT(h[1].replace(/^[\d\s.()\-~]+/,''));let k=nu.findIndex(x=>x&&(n.includes(x)||x.includes(n)));if(k<0)k=Math.min(cur+1,units.length-1);cur=k;return;}
     const n0=normT(line);if(nu.some(x=>x&&x===n0))return;
-    const t=endDot(line.replace(/^[-•·*]\s*/,'').replace(/^\d+[.)]\s*/,''));
+    const body=line.replace(/^[-•·*]\s*/,'').replace(/^\d+[.)]\s*/,'');
+    if(!obsOk(body)){OBS_REJECT++;return;} // 관찰 기록이 아닌 문장(시·이야기 등)은 버리고 아래에서 다시 만듦
+    const t=endDot(body);
     if(normT(t).length<10)return;
     if(cur<0)loose.push(t);else groups[cur].push(t);
   });
@@ -675,11 +774,18 @@ async function genObsFor(s,subj,sem,onProg){
     if(r.loose.length){let k=0;U.forEach((u,i)=>{groups[i]=r.loose.slice(k,k+counts[i]);k+=counts[i];});}
   }
   for(let i=0;i<U.length;i++){ // 모자란 단원 채우기
-    let tries=0;
-    while(groups[i].length<counts[i]&&tries<2&&!stopFlag){tries++;
+    let tries=0;const maxTry=smallModel()?counts[i]+4:3;
+    while(groups[i].length<counts[i]&&tries<maxTry&&!stopFlag){tries++;
+      if(smallModel()){ // 작은 모델: 한 문장씩 짧게 요청해야 형식을 지킴
+        onProg&&onProg(`${U[i]} 작성 중… (${groups[i].length+1}/${counts[i]})`);
+        const t=await chat([{role:'system',content:sysPrompt()},{role:'user',content:`${subj} 수업 '${U[i]}' 단원에서 이 학생이 한 활동을 관찰 기록 한 문장으로 쓰세요.\n[학생 특성]\n${subjTraitText(s,subj)}\n[이미 쓴 문장 - 겹치지 않게]\n${groups[i].slice(-4).map(x=>'- '+x).join('\n')||'- 없음'}\n[좋은 예] 친구가 쓴 시에서 비유 표현을 찾아 그 효과를 조리 있게 설명함.\n[좋은 예] 모둠 토의에서 자신의 생각을 근거를 들어 분명하게 발표함.\n시나 이야기를 직접 짓지 말고, 학생이 무엇을 어떻게 했는지 '~함.'으로 끝나는 한 문장만 출력하세요.`}],null,{max:160,temperature:0.8});
+        const raw=stripEcho(clean(t).split('\n').map(x=>x.trim()).find(x=>normT(x).length>=10)||'',[U[i],subj]);
+        if(obsOk(raw)){const x=endDot(raw);if(!groups[i].some(g=>normT(g)===normT(x)))groups[i].push(x);}else OBS_REJECT++;
+        continue;
+      }
       const need=counts[i]-groups[i].length;onProg&&onProg(`${U[i]} 보충 중…`);
       const t=await chat([{role:'system',content:sysPrompt()},{role:'user',content:`[작성할 항목] ${subj} 교과 수업 관찰 기록\n[단원] ${U[i]}\n[학생 특성]\n${subjTraitText(s,subj)}\n[이미 쓴 문장]\n${groups[i].map(x=>'- '+x).join('\n')||'- 없음'}\n이 단원 수업에서 관찰한 이 학생의 활동과 성취를 이미 쓴 문장과 다른 내용으로 ${need}개 더 쓰세요. 한 줄에 한 문장, 명사형(~함.)으로 끝내고 번호 없이 씁니다.`}],null,{max:need*160+200});
-      t.split('\n').map(x=>endDot(x.replace(/^[-•·*]\s*/,'').replace(/^\d+[.)]\s*/,''))).filter(x=>normT(x).length>=10&&!x.startsWith('#')).forEach(x=>groups[i].length<counts[i]&&groups[i].push(x));
+      t.split('\n').map(x=>x.replace(/^[-•·*]\s*/,'').replace(/^\d+[.)]\s*/,'')).filter(x=>!x.startsWith('#')&&obsOk(x)).map(endDot).filter(x=>normT(x).length>=10).forEach(x=>groups[i].length<counts[i]&&groups[i].push(x));
     }
     groups[i]=groups[i].slice(0,counts[i]);
   }
@@ -714,8 +820,10 @@ function ccaPlan(sub){
   if(sch.length<N){const extra=spreadDates(N).filter(d=>!sch.some(x=>x.date===d)).slice(0,N-sch.length).map(d=>({date:d,act:''}));sch=[...sch,...extra].sort((a,b)=>a.date.localeCompare(b.date));}
   return sch;
 }
+/* 복사·자동입력용 창체 문장: 옵션을 켜면 '활동명(2026.03.06.)'을 프로그램이 직접 앞에 붙임 */
+function ccaOut(r){const t=oneLine(r.text||'');if(!state.cca.datePrefix||!t)return t;const d=(r.date||'').replace(/-/g,'.');return `${r.act?r.act:''}${d?`(${d}.)`:''} ${t}`.trim();}
 function clubOf(s){return state.cca.club.clubs.find(c=>c.id===s.cca.club.clubId)||null;}
-function ccaOthers(s,sub){const L=[];state.students.forEach(x=>{if(x.id===s.id)return;x.cca[sub].recs.forEach((r,i)=>L.push({name:`${dname(x)}(${r.date})`,text:r.text}));});return L;}
+function ccaOthers(s,sub){const L=[];S().forEach(x=>{if(x.id===s.id)return;x.cca[sub].recs.forEach((r,i)=>L.push({name:`${dname(x)}(${r.date})`,text:r.text}));});return L;}
 function ccaMsgs(s,sub,plan,avoid){
   const C=CCA[sub],note=(s.cca[sub].note||'').trim(),club=sub==='club'?clubOf(s):null;
   return [{role:'system',content:sysPrompt()},{role:'user',content:
@@ -732,7 +840,7 @@ async function genCcaFor(s,sub,onProg){
   if(sub==='club'&&!clubOf(s))throw new Error(`${dname(s)} 학생의 동아리를 먼저 고르세요.`);
   const plan=ccaPlan(sub),others=ccaOthers(s,sub),idx=makeIdx(others);
   onProg&&onProg('작성 중…');
-  const text=await chat(ccaMsgs(s,sub,plan,shuffle(others).slice(0,6).map(o=>o.text)),null,{max:plan.length*220+300});
+  const text=smallModel()?'':await chat(ccaMsgs(s,sub,plan,shuffle(others).slice(0,6).map(o=>o.text)),null,{max:plan.length*220+300}); // 작은 모델은 형식을 못 지켜서 활동마다 따로 요청
   const rows=[];
   text.split('\n').forEach(l=>{const p=l.split('|').map(x=>x.trim());if(p.length>=3&&/\d/.test(p[0]))rows.push({act:p[1],text:p.slice(2).join(' ')});else if(p.length===2&&normT(p[1]).length>8)rows.push({act:'',text:p[1]});});
   if(rows.length<plan.length){text.split('\n').filter(l=>!l.includes('|')&&normT(l).length>15).forEach(l=>rows.length<plan.length&&rows.push({act:'',text:l.replace(/^\d+[.)]\s*/,'')}));}
@@ -740,7 +848,16 @@ async function genCcaFor(s,sub,onProg){
   for(let i=0;i<plan.length;i++){
     if(stopFlag)break;
     let r=rows[i];
-    if(!r||!r.text){const t=await chat([{role:'system',content:sysPrompt()},{role:'user',content:`[작성할 항목] ${CCA[sub].label} 누가기록 1개\n[활동] ${plan[i].act||'알맞은 활동'}\n[학생 특성]\n${obsText(s)}\n이 활동에서 이 학생이 보인 참여 모습을 1~2문장, 명사형(~함.)으로 쓰세요. 내용만 출력하세요.`}],null,{max:300});r={act:'',text:t};}
+    const club=sub==='club'?clubOf(s):null,note=(s.cca[sub].note||'').trim();
+    if(!r||!r.text){onProg&&onProg(`${i+1}/${plan.length}번째 활동 작성 중…`);
+      const t=await chat([{role:'system',content:sysPrompt()},{role:'user',content:`${CCA[sub].label}${club?`(${club.name} 동아리${club.desc?`: ${club.desc}`:''})`:''}의 '${plan[i].act||'정기 활동'}' 시간에 이 학생이 보인 참여 모습을 1~2문장으로 쓰세요.\n[학생 특성]\n${obsText(s)}${note?`\n[선생님 메모] ${note}`:''}${recs.length?`\n[앞 활동 기록 - 겹치지 않게, 한 단계 성장한 모습으로]\n${recs.slice(-2).map(x=>'- '+x.text).join('\n')}`:''}\n[좋은 예] 학급 규칙을 정하는 회의에서 모두가 지킬 수 있는 규칙을 제안하고 친구들의 의견을 정리하여 발표함.\n활동 이름, 번호, 날짜, '학생은'을 쓰지 말고 '~함.'으로 끝나는 내용만 출력하세요.`}],null,{max:260,temperature:0.8});r={act:'',text:t};}
+    const tidy=t=>fixStyle(stripEcho(clean(t),[plan[i].act,r.act,CCA[sub].label,'창의적 체험활동'])).split(/(?<=[.!?])\s+/).slice(0,2).join(' '); // 꼬리표 지우고 1~2문장
+    r.text=tidy(r.text);
+    for(let k=0;k<2&&!ccaOk(r.text)&&!stopFlag;k++){ // '~익히기.'처럼 활동 이름만 쓴 것 → 다시
+      const t=await chat([{role:'system',content:sysPrompt()},{role:'user',content:`${CCA[sub].label}의 '${plan[i].act||'정기 활동'}' 시간에 이 학생이 보인 참여 모습을 '~함.'으로 끝나는 1~2문장으로 쓰세요.\n[학생 특성]\n${obsText(s)}\n[좋은 예] 팀원들과 패스 연습을 하며 서로의 위치를 확인하고 정확하게 공을 주고받음.\n활동 이름, 번호, 날짜를 쓰지 말고 내용만 출력하세요.`}],null,{max:220,temperature:0.7});
+      const x=tidy(t);if(ccaOk(x))r.text=x;
+    }
+    if(/^\d{4}-\d{2}-\d{2}$/.test(r.act||''))r.act='';
     onProg&&onProg(`같은 문장 검사 ${i+1}/${plan.length}`);
     const u=await uniqRecord(r.text,idx,`${dname(s)}(${plan[i].date})`,`${CCA[sub].label} ${plan[i].act||r.act}`);
     recs.push({date:plan[i].date,act:plan[i].act||r.act||'',text:u.text,dup:u.dup});
@@ -818,7 +935,7 @@ ${s?obsText(s):'-'}
 [출력 형식] "제목|내용" 한 줄만 씁니다.`}],null,{max:500,temperature:0.9});
     const line=out.split('\n').find(l=>l.includes('|'))||out;const p=line.split('|');
     let title=(p.length>1?p[0]:`${r.seed} 상담`).replace(/^제목\s*[:：]?\s*/,'').trim(),content=(p.length>1?p.slice(1).join(' '):out).replace(/^내용\s*[:：]?\s*/,'').trim();
-    content=dropTrunc(fixDots(oneLine(content)));title=title.replace(/[.。]+$/,'');
+    content=fixStyle(dropTrunc(fixDots(oneLine(content))));title=title.replace(/[.。]+$/,'');
     if(!content||badText(content))continue;
     if(titles.has(normT(title)))title=`${r.seed} 관련 ${r.cat} 상담`;
     if(titles.has(normT(title)))title=`${title}(${r.date.slice(5).replace('-','/')})`;
@@ -838,6 +955,8 @@ async function run(fn){
   busy=false;document.body.classList.remove('busy');save();render();
 }
 function prog(t){const p=$('prog');if(p)p.textContent=t;}
+/* 일괄 생성 남은 시간: 처음 몇 명 걸린 시간으로 계산 */
+function etaTimer(total){const t0=Date.now();return done=>{if(done<1||done>=total)return '';const sec=(Date.now()-t0)/1000/done*(total-done);return ` · 남은 시간 약 ${sec<90?Math.max(10,Math.round(sec/10)*10)+'초':Math.round(sec/60)+'분'}`;};}
 function stop(){stopFlag=true;ctrl&&ctrl.abort();}
 
 /* ======================================================================
@@ -909,21 +1028,32 @@ function vHome(){
 
 /* ---------- ① 학생 명단 ---------- */
 function vRoster(){
-  const L=S();
+  const L=SA(),outN=L.filter(s=>s.out).length;
   return title(1,'학생 명단','학생 수를 입력하고 [적용]을 누르면 1번부터 자동으로 만들어져요. 이름과 성별은 표에서 바로 입력하세요. (이름은 AI에게 보내지 않아요)')+
   `<div class="filter"><label><span class="req">*</span>학생 수<input id="cntIn" type="number" min="1" max="60" style="width:90px" value="${L.length||''}" placeholder="예: 25"> 명</label>
   <button class="btn" data-act="setCount">적용</button><button class="btn line" data-act="pasteNames">이름 한꺼번에 붙여넣기</button></div>
-  <div class="sechead"><h3>학생 명단</h3><span class="total">Total ${L.length}</span></div>
-  ${L.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th style="width:60px">번호</th><th style="width:30%">성명</th><th style="width:90px">성별</th><th>행동 체크</th><th>행발</th><th>관찰기록</th><th>창체</th></tr></thead><tbody>
-  ${L.map(s=>`<tr><td class="c">${s.no}</td><td><input data-bind="name" data-id="${s.id}" value="${esc(s.name)}" placeholder="${s.no}번 학생 이름" style="width:100%"></td>
+  <div class="sechead"><h3>학생 명단</h3><span class="total">Total ${L.length-outN}${outN?` (전출 ${outN}명 제외)`:''}</span></div>
+  ${outN?'<p class="hint">전출 처리한 학생은 지우지 않고 남겨 둬요. 만들기·검사·내보내기·자동 입력에서 빠지고, [되돌리기]로 다시 넣을 수 있어요.</p>':''}
+  ${L.length?`<div class="tblwrap"><table class="tbl"><thead><tr><th style="width:60px">번호</th><th style="width:30%">성명</th><th style="width:90px">성별</th><th>행동 체크</th><th>행발</th><th>관찰기록</th><th>창체</th><th style="width:96px">전출</th></tr></thead><tbody>
+  ${L.map(s=>`<tr class="${s.out?'outrow':''}"><td class="c">${s.no}</td><td><input data-bind="name" data-id="${s.id}" value="${esc(s.name)}" placeholder="${s.no}번 학생 이름" style="width:100%"></td>
   <td class="c"><select data-bind="gender" data-id="${s.id}"><option value=""></option><option ${s.gender==='남'?'selected':''}>남</option><option ${s.gender==='여'?'selected':''}>여</option></select></td>
-  <td class="c">${s.checks.length}개</td><td class="c">${s.hb&&s.hb.text?'<span class="badge ok">작성</span>':'-'}</td><td class="c">${Object.values(s.obs).reduce((a,r)=>a+r.length,0)}개</td><td class="c">${['auto','club','career'].reduce((a,c)=>a+s.cca[c].recs.length,0)}개</td></tr>`).join('')}
+  <td class="c">${(s.kws||[]).length}개</td><td class="c">${s.hb&&s.hb.text?'<span class="badge ok">작성</span>':'-'}</td><td class="c">${Object.values(s.obs).reduce((a,r)=>a+r.length,0)}개</td><td class="c">${['auto','club','career'].reduce((a,c)=>a+s.cca[c].recs.length,0)}개</td><td class="c"><button class="btn ${s.out?'line':'line'} sm" data-act="toggleOut" data-id="${s.id}">${s.out?'되돌리기':'전출 처리'}</button></td></tr>`).join('')}
   </tbody></table></div>`:'<div class="panel empty">학생 수를 입력하고 적용을 누르세요.</div>'}`+nextbar(1);
 }
 
 /* ---------- ② 행동특성및종합의견 ---------- */
-const hbOthers=s=>state.students.filter(x=>x.id!==s.id&&x.hb&&x.hb.text).map(x=>({name:dname(x),text:x.hb.text}));
-const nuOthers=nid=>state.students.flatMap(x=>x.nu.filter(n=>n.id!==nid&&n.text).map(n=>({name:`${dname(x)}(${n.date})`,text:n.text})));
+const hbOthers=s=>S().filter(x=>x.id!==s.id&&x.hb&&x.hb.text).map(x=>({name:dname(x),text:x.hb.text}));
+const nuOthers=nid=>S().flatMap(x=>x.nu.filter(n=>n.id!==nid&&n.text).map(n=>({name:`${dname(x)}(${n.date})`,text:n.text})));
+/* 키워드 칩: 고르기 / (편집 모드) 고치기·지우기·추가 */
+function kwChips(items,on,act){
+  const ed=!!state.ui.kwEdit;
+  return items.map(x=>`<span class="chip ${x.neg?'neg':'pos'} ${on.includes(x.id)?'on':''} ${ed?'edit':''}" ${ed?'':`data-act="${act}" data-k="${esc(x.id)}"`}>${esc(x.t)}${ed?`<i data-act="kwRen" data-k="${esc(x.id)}" title="고치기">✎</i><i data-act="kwDel" data-k="${esc(x.id)}" title="지우기">×</i>`:''}</span>`).join('');
+}
+function kwItemRow(it,on,act){
+  const ed=!!state.ui.kwEdit;
+  return `<div class="kwrow">${it.label?`<div class="kwlab">${esc(it.label)}</div>`:''}<div class="chips">${kwChips(it.kw,on,act)}${ed?`<span class="chip add" data-act="kwAdd" data-item="${it.id}">+ 강점</span>${it.interest?'':`<span class="chip add neg" data-act="kwAdd" data-item="${it.id}" data-neg="1">+ 보완점</span>`}`:''}</div></div>`;
+}
+function kwEditBtn(){return `<button class="btn line sm ${state.ui.kwEdit?'on':''}" data-act="kwEdit" title="키워드를 고치거나 지우거나 추가해요">${state.ui.kwEdit?'✔ 편집 끝내기':'✎ 키워드 편집'}</button>`;}
 function chipRow(key,arr,pol,sub,on,act='chip'){
   if(!arr.length)return '';
   return (sub?`<div class="sub">${sub}</div>`:'')+`<div class="chips">${arr.map(t=>{const k=key?`${key}|${pol}|${t}`:t;return `<span class="chip ${pol} ${on.includes(k)?'on':''}" data-act="${act}" data-k="${esc(k)}">${t}</span>`;}).join('')}</div>`;
@@ -940,9 +1070,9 @@ function vHb(){
     <div class="tblwrap"><table class="tbl"><thead><tr><th style="width:56px">번호</th><th style="width:100px">성명</th><th>행동특성 및 종합의견</th><th style="width:80px">글자수</th><th style="width:70px">복사</th></tr></thead><tbody>
     ${L.map(x=>{const t=x.hb?.text||'',d=t?sameSentences(t,hbOthers(x)):[];return `<tr><td class="c">${x.no}</td><td>${esc(dname(x))}</td><td>${esc(t)||'<span class="hint">아직 없음</span>'}${d.length?`<div class="dup">⛔ 똑같은 문장 ${d.length}개</div>`:''}</td><td class="c">${lenOf(t)}</td><td class="c">${t?clipBtn(()=>x.hb?.text||''):''}</td></tr>`;}).join('')}</tbody></table></div>`+nextbar(2);
   }
-  const left=stuList(x=>`<span class="badge">${x.checks.length}</span>${x.hb&&x.hb.text?'<span class="badge ok">행</span>':''}`);
-  const cats=CATS.map(c=>`<div class="cat"><h5>${c.label}</h5>${chipRow(c.id,c.pos,'pos',c.neg.length?'강점':'',s.checks)}${chipRow(c.id,c.neg,'neg','보완이 필요한 점',s.checks)}</div>`).join('');
-  const mid=`<div class="panel"><h4>${s.no}번 ${esc(s.name)} <small>파랑=강점 · 빨강=보완점</small><span class="sp"></span><button class="btn line sm" data-act="clearChecks">초기화</button></h4>${cats}
+  const left=stuList(x=>`<span class="badge">${(x.kws||[]).length}</span>${x.hb&&x.hb.text?'<span class="badge ok">행</span>':''}`);
+  const cats=kwAreas().map(a=>`<div class="cat area"><h5>${a.icon||''} ${esc(a.label)}</h5>${a.items.map(it=>kwItemRow(it,s.kws||[],'chip')).join('')}</div>`).join('')||'<div class="empty">키워드를 불러오는 중…</div>';
+  const mid=`<div class="panel"><h4>${s.no}번 ${esc(s.name)} <small>파랑=강점 · 빨강=보완점 · 몇 개만 골라도 돼요</small><span class="sp"></span>${kwEditBtn()}<button class="btn line sm" data-act="clearChecks">초기화</button></h4>${state.ui.kwEdit?'<div class="hint" style="color:var(--blue)">편집 중: ✎ 고치기 · × 지우기 · + 추가. 고친 내용은 모든 학생에게 똑같이 적용되고, 기본 키워드가 업데이트돼도 그대로 남아요.</div>':''}${cats}
    <div class="hint" style="font-weight:700;color:#333">교사 관찰 메모</div><textarea data-bind="memo" rows="3" placeholder="예) 학급 회의에서 급식 순서 규칙을 제안해 반 전체가 따르게 됨.">${esc(s.memo)}</textarea>
    <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn line" data-act="nextStu">다음 학생 →</button></div></div>`;
   let right;
@@ -951,7 +1081,7 @@ function vHb(){
     right=`<div class="panel"><h4>행동특성 및 종합의견<span class="sp"></span>${clipBtn(()=>s.hb?.text||'')}</h4>
     <input id="extraReq" style="width:100%" placeholder="추가 요청 (선택) 예) 리더십을 더 강조 / 더 담백하게">
     <div class="row" style="margin-top:8px"><button class="btn gen" data-act="genHb">${t?'다시 만들기':'만들기'}</button><button class="btn line gen" data-act="bulkHb">학급 전체 한 번에</button><button class="btn navy stopBtn" data-act="stop">중지</button></div>
-    <div id="prog" class="prog"></div><textarea id="hbOut" data-bind="hbText" rows="10">${esc(t)}</textarea><div id="hbMeta">${metaHtml(t,state.settings.len.hb,s,d,s.hb&&s.hb.flag)}</div></div>`;
+    <div id="prog" class="prog"></div><textarea id="hbOut" data-bind="hbText" rows="10">${esc(t)}</textarea><div id="hbMeta">${metaHtml(t,hbTarget().max||0,s,d,s.hb&&s.hb.flag)}</div></div>`;
   }else{
     right=`<div class="panel"><h4>행동 누가기록<span class="sp"></span>${s.nu.length?clipBtn(()=>[...s.nu].sort((a,b)=>a.date.localeCompare(b.date)).map(n=>`${n.date} ${oneLine(n.text)}`).join('\n'),'이 학생 전체 복사'):''}</h4>
     <div class="row"><input type="date" id="nuDate" value="${today()}"></div>
@@ -969,7 +1099,7 @@ function vHb(){
 function vObs(){
   const T='교과 관찰내용관리',D='과목별로 학생 특징을 체크하면 학기당 20개씩, 단원 순서대로 학생마다 서로 다른 관찰기록을 만들어요.';
   const need=needStudents(3,T,D);if(need)return need;
-  const s=ensureCur(),subj=fixSubj('obsSubj'),sem=state.ui.obsSem,key=okey(subj,sem),units=unitsOf(subj,sem),info=subjInfo(s,subj),Tr=SUBJ_TRAITS[subj]||INTEG;
+  const s=ensureCur(),subj=fixSubj('obsSubj'),sem=state.ui.obsSem,key=okey(subj,sem),units=unitsOf(subj,sem),info=subjInfo(s,subj);
   const recs=s.obs[key]||[],N=+state.obsCount||20;
   const done=S().filter(x=>(x.obs[key]||[]).length).length;
   const filter=`<div class="filter"><label><span class="req">*</span>학기<select data-bind="obsSem">${Object.entries(SEM).map(([k,v])=>`<option value="${k}" ${sem===k?'selected':''}>${v}</option>`).join('')}</select></label>
@@ -980,10 +1110,10 @@ function vObs(){
    <div><textarea data-bind="units" rows="6" placeholder="1. 비유하는 표현\n2. 이야기를 간추려요\n3. 짜임새 있게 구성해요">${esc((state.units[subj]||{})[sem]||'')}</textarea>
     <div class="hint">${units.length?`${units.length}개 단원 → 학생마다 ${slots(N,Math.min(units.length,N)).join('·')}개씩 단원 순서대로 만들어요.`:'단원을 입력해야 관찰기록을 만들 수 있어요.'}</div></div>
 </div>`;
-  const left=stuList(x=>{const n=(x.obs[key]||[]).length,d=(x.obs[key]||[]).some(r=>r.dup);return `<span class="badge">${subjInfo(x,subj).t.length}</span>${n?`<span class="badge ${d?'bad':'ok'}">${n}</span>`:''}`;});
+  const left=stuList(x=>{const n=(x.obs[key]||[]).length,d=(x.obs[key]||[]).some(r=>r.dup);return `<span class="badge">${subjInfo(x,subj).k.length}</span>${n?`<span class="badge ${d?'bad':'ok'}">${n}</span>`:''}`;});
   const mid=`<div class="panel"><h4>${s.no}번 ${esc(s.name)} · ${subj} 특징</h4>
    <div class="cat"><h5>전반적 성취</h5><span class="seg">${['상','중','하'].map(v=>`<button class="${info.lv===v?'on':''}" data-act="subjLv" data-v="${v}">${{상:'우수',중:'보통',하:'노력 필요'}[v]}</button>`).join('')}</span></div>
-   <div class="cat"><h5>${subj} 특징</h5>${chipRow('',Tr.pos,'pos','강점',info.t,'subjChip')}${chipRow('',Tr.neg,'neg','보완이 필요한 점',info.t,'subjChip')}</div>
+   <div class="cat"><h5>${subj} 특징 <span class="sp"></span>${kwEditBtn()}</h5>${kwItemRow({id:subjItemId(subj),label:'',kw:subjKw(subj)},info.k,'subjChip')}</div>
    <div class="hint" style="font-weight:700;color:#333">${subj} 관찰 메모 (선택)</div><textarea data-bind="subjMemo" rows="2" placeholder="예) 시 쓰기 단원에서 비유 표현을 특히 잘 씀">${esc(info.memo||'')}</textarea>
    <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn line" data-act="nextStu">다음 학생 →</button></div></div>`;
   let list='';let lastU='';
@@ -1031,14 +1161,15 @@ function vCca(){
    <div class="grid2"><div><textarea data-bind="ccaSchedule" rows="5" placeholder="${sub==='club'?'04-10 동아리 조직과 계획 세우기\n05-22 기초 익히기':'03-06 학급 임원 선거'}">${esc(cs.schedule)}</textarea>
    <div class="row"><label class="hint" style="margin:0">학생당 누가기록 <input type="number" min="1" max="15" data-bind="ccaCount" value="${cs.count}" style="width:60px"> 개</label>${sub!=='club'?`<button class="copy" data-act="ccaDefault">예시 일정 넣기</button>`:''}</div></div>
    <div><div class="hint" style="font-weight:700;color:#333">이렇게 만들어져요 (시간 순서)</div>${plan.map((p,i)=>`<div class="hint" style="margin:2px 0">${i+1}. ${p.date} · ${esc(p.act||'(활동명은 AI가 알맞게 정함)')}</div>`).join('')}</div></div></div>`;
-  CLIP.push(()=>L.map(s=>s.cca[sub].recs.map(r=>`${s.no}\t${dname(s)}\t${r.date}\t${oneLine(r.text)}`).join('\n')).filter(Boolean).join('\n'));const ai=CLIP.length-1;
-  const table=`<div class="sechead"><h3>${C.label} 누가기록</h3><span class="total">Total ${L.filter(s=>s.cca[sub].recs.length).length}명</span><span class="sp"></span>
+  CLIP.push(()=>L.map(s=>s.cca[sub].recs.map(r=>`${s.no}\t${dname(s)}\t${r.date}\t${ccaOut(r)}`).join('\n')).filter(Boolean).join('\n'));const ai=CLIP.length-1;
+  const table=`<label class="chk" style="margin:6px 0"><input type="checkbox" data-bind="ccaDate" ${state.cca.datePrefix?'checked':''}> 복사·자동 입력할 때 앞에 '활동명(날짜)' 붙이기 <span class="hint" style="margin:0">예) 학급 임원 선거(2026.03.06.) 학급 규칙을 …  · 날짜는 AI가 아니라 프로그램이 일정표대로 넣어요</span></label>
+  <div class="sechead"><h3>${C.label} 누가기록</h3><span class="total">Total ${L.filter(s=>s.cca[sub].recs.length).length}명</span><span class="sp"></span>
    <button class="btn gen" data-act="bulkCca" data-v="missing">미작성 학생 모두 만들기</button><button class="btn line gen" data-act="bulkCca" data-v="all">전체 다시 만들기</button><button class="btn navy stopBtn" data-act="stop">중지</button><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사</button></div><div id="prog" class="prog"></div>
    <div class="tblwrap"><table class="tbl"><thead><tr><th style="width:50px">번호</th><th style="width:90px">성명</th>${sub==='club'?'<th style="width:130px">동아리</th>':''}<th style="width:22%">학생별 언급할 내용</th><th>누가기록 (시간 순서)</th><th style="width:66px"></th></tr></thead><tbody>
    ${L.map(s=>{const st=s.cca[sub];return `<tr><td class="c">${s.no}</td><td>${esc(dname(s))}</td>
     ${sub==='club'?`<td><select data-bind="clubPick" data-id="${s.id}" style="width:100%"><option value="">선택</option>${clubs.map(c=>`<option value="${c.id}" ${st.clubId===c.id?'selected':''}>${esc(c.name||'(이름 없음)')}</option>`).join('')}</select></td>`:''}
     <td><textarea data-bind="ccaNote" data-id="${s.id}" rows="3" placeholder="예) ${sub==='auto'?'부회장으로 학급 회의 진행을 도움':sub==='club'?'로봇 조립을 특히 잘함, 대회 준비 때 팀장':'요리사가 꿈, 직업 체험에서 적극적'}">${esc(st.note)}</textarea></td>
-    <td>${st.recs.length?st.recs.map((r,i)=>`<div class="rec"><span class="d">${r.date}${r.act?`<br><span class="hint" style="margin:0">${esc(r.act.slice(0,14))}</span>`:''}</span><div style="flex:1"><textarea data-bind="ccaText" data-id="${s.id}" data-i="${i}" rows="2">${esc(r.text)}</textarea>${r.dup?'<div class="dup">⛔ 다른 학생과 똑같은 문장</div>':''}</div>${clipBtn(()=>r.text)}</div>`).join('')+`<div class="row" style="justify-content:flex-end;margin-top:4px">${clipBtn(()=>st.recs.map(r=>`${r.date} ${oneLine(r.text)}`).join('\n'),'이 학생 전체 복사')}</div>`:'<span class="hint">아직 없음</span>'}</td>
+    <td>${st.recs.length?st.recs.map((r,i)=>`<div class="rec"><span class="d">${r.date}${r.act?`<br><span class="hint" style="margin:0">${esc(r.act.slice(0,14))}</span>`:''}</span><div style="flex:1"><textarea data-bind="ccaText" data-id="${s.id}" data-i="${i}" rows="2">${esc(r.text)}</textarea>${r.dup?'<div class="dup">⛔ 다른 학생과 똑같은 문장</div>':''}</div>${clipBtn(()=>ccaOut(r))}</div>`).join('')+`<div class="row" style="justify-content:flex-end;margin-top:4px">${clipBtn(()=>st.recs.map(r=>state.cca.datePrefix?ccaOut(r):`${r.date} ${oneLine(r.text)}`).join('\n'),'이 학생 전체 복사')}</div>`:'<span class="hint">아직 없음</span>'}</td>
     <td class="c"><button class="btn sm gen" data-act="genCca" data-id="${s.id}">${st.recs.length?'다시':'만들기'}</button></td></tr>`;}).join('')}</tbody></table></div>`;
   return title(5,T+' · '+C.label,D)+tabs+clubBox+sched+table+nextbar(5);
 }
@@ -1135,17 +1266,65 @@ function vResult(){
    <table class="tbl" style="margin-top:12px"><thead><tr><th>항목</th><th>기록 수</th></tr></thead><tbody>${cats.map(c=>`<tr><td>${esc(c.label)}</td><td class="c">${c.items.length}</td></tr>`).join('')||'<tr><td colspan="2" class="empty">아직 만든 기록이 없어요.</td></tr>'}</tbody></table></div>
    <div class="panel"><h4>내보내기</h4><div class="row"><button class="btn green" data-act="xlsxAll" ${rep.length?'disabled':''}>📥 전체 엑셀 내려받기</button><button class="btn line" data-act="csXlsx" ${state.counsel.rows.length?'':'disabled'}>📥 학생상담 나이스 양식</button></div>
    <p class="hint">전체 엑셀에는 항목마다 시트가 나뉘어 들어가요. 각 메뉴의 📋 복사 버튼으로 나이스에 바로 붙여넣을 수도 있어요.</p></div>
+   ${aiPanel()}
    <div class="panel"><h4>백업</h4><p class="hint">하루에 한 번 자동으로 백업돼요: <span class="path">${esc(INFO?INFO.backupDir:'')}</span></p>
    <div class="row"><button class="btn line" data-act="backup">지금 백업</button><button class="btn line" data-act="openBackup">백업 폴더 열기</button><button class="btn line" data-act="restore">백업 불러오기</button><input type="file" id="fileRestore" accept=".json" style="display:none"></div></div>`+nextbar(8);
 }
+/* ---------- NEIS 자동 입력 ---------- */
+const AI_TABS={hb:2,fin:3,cca:2};
+function aiCfg(){const d={kind:'hb',subj:subjects()[0]||'국어',sem:'1',cca:'auto',idx:'all',tabs:2,replace:true,slow:false,from:1};state.ui.ai={...d,...(state.ui.ai||{})};return state.ui.ai;}
+function aiText(s,c){
+  if(c.kind==='hb')return s.hb?.text||'';
+  if(c.kind==='fin')return s.fin[okey(c.subj,c.sem)]?.text||'';
+  const recs=[...s.cca[c.cca].recs].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  return c.idx==='all'?recs.map(ccaOut).filter(Boolean).join(' '):(recs[+c.idx]?ccaOut(recs[+c.idx]):'');
+}
+function aiItems(){const c=aiCfg();return S().filter(s=>s.no>=(+c.from||1)).map(s=>({no:String(s.no),name:dname(s),text:oneLine(aiText(s,c))}));}
+let AISTAT=null,AIPOLL=null;
+function aiPanel(){
+  const c=aiCfg(),items=aiItems(),filled=items.filter(x=>x.text).length,maxRec=Math.max(0,...state.students.map(s=>s.cca[c.cca].recs.length));
+  const st=AISTAT&&AISTAT.state;
+  return `<div class="panel" id="aiPanel"><h4>NEIS 자동 입력 <span class="hint" style="font-weight:400">F2 한 번이면 학생 순서대로 나이스에 붙여넣어요</span></h4>
+   <div class="filter" style="margin:0 0 8px">
+    <label>입력할 항목<select data-bind="ai" data-k="kind"><option value="hb" ${c.kind==='hb'?'selected':''}>행동특성 및 종합의견</option><option value="fin" ${c.kind==='fin'?'selected':''}>교과 학기말 종합의견</option><option value="cca" ${c.kind==='cca'?'selected':''}>창의적 체험활동 누가기록</option></select></label>
+    ${c.kind==='fin'?`<label>과목<select data-bind="ai" data-k="subj">${subjects().map(x=>`<option ${x===c.subj?'selected':''}>${esc(x)}</option>`).join('')}</select></label><label>학기<select data-bind="ai" data-k="sem">${['1','2'].map(x=>`<option value="${x}" ${x===c.sem?'selected':''}>${SEM[x]}</option>`).join('')}</select></label>`:''}
+    ${c.kind==='cca'?`<label>영역<select data-bind="ai" data-k="cca">${['auto','club','career'].map(x=>`<option value="${x}" ${x===c.cca?'selected':''}>${CCA[x].label}</option>`).join('')}</select></label><label>누가기록<select data-bind="ai" data-k="idx"><option value="all" ${c.idx==='all'?'selected':''}>전부 합쳐서 한 칸에</option>${Array.from({length:maxRec},(_,i)=>`<option value="${i}" ${String(i)===String(c.idx)?'selected':''}>${i+1}번째${(()=>{const p=ccaPlan(c.cca)[i];return p?` · ${esc(p.date.slice(5))} ${esc(p.act||'')}`:'';})()}</option>`).join('')}</select></label>`:''}
+    <label>Tab 횟수<input type="number" min="1" max="9" data-bind="ai" data-k="tabs" value="${c.tabs}" style="width:56px"></label>
+    <label>시작 번호<input type="number" min="1" data-bind="ai" data-k="from" value="${c.from}" style="width:60px"></label>
+    <label class="chk"><input type="checkbox" data-bind="ai" data-k="replace" ${c.replace?'checked':''}> 칸에 있던 내용 지우고 넣기</label>
+    <label class="chk"><input type="checkbox" data-bind="ai" data-k="slow" ${c.slow?'checked':''}> 천천히 (컴퓨터·나이스가 느릴 때)</label>
+   </div>
+   <p class="hint">· Tab 횟수: 나이스에서 한 학생 칸에서 다음 학생 칸까지 Tab을 몇 번 눌러야 하는지예요. 보통 <b>행발·창체 2번, 학기말 종합의견 3번</b>이에요. 처음엔 2~3명만 해 보고 맞는지 확인하세요.<br>· 학생 <b>번호 순서</b>대로 들어가요. 나이스 화면의 학생 순서와 같아야 해요. 내용이 빈 학생은 건너뛰고 다음 칸으로 넘어가요.</p>
+   <div style="max-height:180px;overflow:auto;border:1px solid var(--line);margin:6px 0"><table class="tbl" style="margin:0"><thead><tr><th style="width:50px">번호</th><th style="width:80px">성명</th><th>들어갈 내용</th><th style="width:70px">바이트</th></tr></thead><tbody>
+    ${items.map(x=>`<tr><td class="c">${esc(x.no)}</td><td>${esc(x.name)}</td><td>${x.text?esc(x.text.slice(0,70))+(x.text.length>70?'…':''):'<span class="hint">(비어 있음 → 건너뜀)</span>'}</td><td class="c">${neisBytes(x.text||'')}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">학생이 없어요.</td></tr>'}
+   </tbody></table></div>
+   <div class="row">${st==='armed'||st==='running'?`<button class="btn navy" data-act="aiCancel">${st==='running'?'■ 멈추기':'취소'}</button>`:`<button class="btn gen" data-act="aiArm" ${filled?'':'disabled'}>▶ 자동 입력 준비 (${filled}명)</button>`}
+    <span id="aiStat" class="hint">${aiStatText()}</span></div>
+  </div>`;
+}
+function aiStatText(){
+  const a=AISTAT;if(!a)return '';
+  if(a.state==='armed')return '<b style="color:var(--blue);font-size:14px">⌨ 이제 나이스에서 첫 학생 입력 칸을 클릭하고 F2를 누르세요.</b> 입력 중에는 키보드·마우스를 만지지 마세요. 멈추려면 Esc.';
+  if(a.state==='running')return `<b style="color:var(--blue)">입력 중… ${a.done}/${a.total}명</b> · 멈추려면 Esc`;
+  if(a.state==='done')return `<b style="color:var(--green)">✔ ${a.total}명 입력을 마쳤어요.</b> 나이스에서 내용을 확인하고 [저장]을 누르세요.`;
+  if(a.state==='stopped')return `<b style="color:var(--red)">멈췄어요 (${a.done}/${a.total}명 입력).</b> ${esc(a.msg||'')} 이어서 하려면 시작 번호를 바꿔 다시 준비하세요.`;
+  return a.msg?esc(a.msg):'';
+}
+async function aiPoll(){
+  try{AISTAT=await getJSON('/api/autoinput');}catch(e){}
+  const el=$('aiStat');if(el)el.innerHTML=aiStatText();
+  const live=AISTAT&&['armed','running'].includes(AISTAT.state);
+  if(!live){clearInterval(AIPOLL);AIPOLL=null;if($('aiPanel'))$('aiPanel').outerHTML=aiPanel();}
+}
 function xlsxSheets(){
   const L=S(),sh=[];
-  sh.push({name:'행동특성및종합의견',widths:[6,10,90,8],rows:[['번호','성명','행동특성 및 종합의견','글자수'],...L.map(s=>[s.no,dname(s),s.hb?.text||'',lenOf(s.hb?.text||'')])]});
+  const LB=t=>[lenOf(t||''),neisBytes(t||'')];
+  sh.push({name:'행동특성및종합의견',widths:[6,10,90,8,8],rows:[['번호','성명','행동특성 및 종합의견','글자수','바이트'],...L.map(s=>[s.no,dname(s),s.hb?.text||'',...LB(s.hb?.text)])]});
   sh.push({name:'행동 누가기록',widths:[6,10,12,30,70],rows:[['번호','성명','날짜','상황','내용'],...L.flatMap(s=>[...s.nu].sort((a,b)=>a.date.localeCompare(b.date)).map(n=>[s.no,dname(s),n.date,n.memo,n.text]))]});
   ['1','2'].forEach(sem=>{const subs=subjects().filter(sub=>L.some(s=>(s.obs[okey(sub,sem)]||[]).length));if(!subs.length)return;
-    sh.push({name:`교과관찰_${SEM[sem]}`,widths:[6,10,10,5,24,80],rows:[['번호','성명','과목','순번','단원','관찰기록'],...L.flatMap(s=>subs.flatMap(sub=>(s.obs[okey(sub,sem)]||[]).map((r,i)=>[s.no,dname(s),sub,i+1,r.unit,r.text])))]});
-    sh.push({name:`학기말종합의견_${SEM[sem]}`,widths:[6,10,...subs.map(()=>50)],rows:[['번호','성명',...subs],...L.map(s=>[s.no,dname(s),...subs.map(sub=>s.fin[okey(sub,sem)]?.text||'')])]});});
-  ['auto','club','career'].forEach(c=>{if(!L.some(s=>s.cca[c].recs.length))return;sh.push({name:`창체_${CCA[c].label.replace('·','')}`,widths:[6,10,...(c==='club'?[16]:[]),12,24,80],rows:[['번호','성명',...(c==='club'?['동아리']:[]),'날짜','활동','누가기록'],...L.flatMap(s=>s.cca[c].recs.map(r=>[s.no,dname(s),...(c==='club'?[(clubOf(s)||{}).name||'']:[]),r.date,r.act,r.text]))]});});
+    sh.push({name:`교과관찰_${SEM[sem]}`,widths:[6,10,10,5,24,80,8,8],rows:[['번호','성명','과목','순번','단원','관찰기록','글자수','바이트'],...L.flatMap(s=>subs.flatMap(sub=>(s.obs[okey(sub,sem)]||[]).map((r,i)=>[s.no,dname(s),sub,i+1,r.unit,r.text,...LB(r.text)])))]});
+    sh.push({name:`학기말종합의견_${SEM[sem]}`,widths:[6,10,...subs.flatMap(()=>[50,8])],rows:[['번호','성명',...subs.flatMap(x=>[x,'바이트'])],...L.map(s=>[s.no,dname(s),...subs.flatMap(sub=>{const t=s.fin[okey(sub,sem)]?.text||'';return [t,neisBytes(t)];})])]});});
+  ['auto','club','career'].forEach(c=>{if(!L.some(s=>s.cca[c].recs.length))return;sh.push({name:`창체_${CCA[c].label.replace('·','')}`,widths:[6,10,...(c==='club'?[16]:[]),12,24,80,8,8],rows:[['번호','성명',...(c==='club'?['동아리']:[]),'날짜','활동','누가기록','글자수','바이트'],...L.flatMap(s=>s.cca[c].recs.map(r=>[s.no,dname(s),...(c==='club'?[(clubOf(s)||{}).name||'']:[]),r.date,r.act,r.text,...LB(r.text)]))]});});
   if(state.sports.rows.length)sh.push({name:'스포츠클럽',widths:[6,24,80],rows:[['차시','활동명','활동내용'],...state.sports.rows.map((r,i)=>[i+1,r.name,r.content])]});
   if(state.counsel.rows.length)sh.push({name:'학생상담',widths:[12,10,12,14,30,70,8,10],rows:[['상담일자','학생','중분류','상담구분','상담제목','상담내용','시간(분)','매체'],...[...state.counsel.rows].sort((a,b)=>a.date.localeCompare(b.date)).map(r=>[r.date,dname(byId(r.sid)),r.mid,r.cat,r.title,r.content,+r.min,r.media])]});
   return sh;
@@ -1173,7 +1352,7 @@ function vSet(){
    <details><summary>적용 중인 작성 규정 전체 보기</summary><pre>${esc(rulesText())}</pre></details>
    <div class="hint" style="font-weight:700;color:#333;margin-top:8px">우리 학교 자체 지침 (선택, 한 줄에 하나)</div><textarea data-bind="schoolRules" rows="3" placeholder="예) 문장 끝은 '~함.'으로 통일">${esc(st.schoolRules)}</textarea></div>
   <div class="panel"><h4>분량 · 같은 문장 기준</h4>
-   <div class="row"><label class="hint" style="margin:0">행발 목표 <input type="number" style="width:80px" data-bind="len" data-k="hb" value="${st.len.hb}">자</label><label class="hint" style="margin:0">행동 누가기록 <input type="number" style="width:80px" data-bind="len" data-k="nu" value="${st.len.nu}">자</label></div>
+   <div class="row"><label class="hint" style="margin:0">행발 분량 <input type="number" style="width:80px" data-bind="len" data-k="hb" value="${st.len.hb}"><select data-bind="lenMode">${[['char','자 (글자 수)'],['byte','바이트 (NEIS)'],['sent','문장']].map(([k,l])=>`<option value="${k}" ${(st.lenMode||'char')===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="hint" style="margin:0">행동 누가기록 <input type="number" style="width:80px" data-bind="len" data-k="nu" value="${st.len.nu}">자</label></div>
    <p class="hint">똑같은 문장은 항상 금지돼요. 아래는 행발처럼 긴 글이 '전체적으로 비슷한 정도'의 허용 기준이에요(높을수록 너그러움).</p>
    <div class="row"><label class="hint" style="margin:0">비슷함 허용 <input type="number" step="0.05" min="0.3" max="0.95" style="width:80px" data-bind="set" data-k="docSim" value="${st.docSim}"></label><label class="hint" style="margin:0">다시 쓰기 횟수 <input type="number" min="1" max="8" style="width:70px" data-bind="set" data-k="retries" value="${st.retries}"></label></div></div>
   </div><div>
@@ -1194,6 +1373,11 @@ function vSet(){
    <div class="row"><select data-bind="stdSubj">${subjects().map(x=>`<option ${x===cs?'selected':''}>${x}</option>`).join('')}</select><span class="hint">추가 ${(state.customStd[cs]||[]).length}개</span></div>
    <textarea id="stdPaste" rows="3" placeholder="[6국07-01] 성취기준 내용… (한 줄에 하나)"></textarea>
    <div class="row"><button class="btn line" data-act="addStd">추가</button><button class="btn line sm" data-act="clearStd">추가한 것 지우기</button></div></div>
+  <div class="panel"><h4>특성 키워드</h4><p class="hint">기본 키워드 버전 ${esc(KWB?KWB.version:'-')} (자동 업데이트) · 내가 고친 것: 추가 ${Object.values(kwFix().add).reduce((a,L)=>a+L.length,0)}개, 고침 ${Object.keys(kwFix().ren).length}개, 지움 ${kwFix().del.length}개<br>기본 키워드가 업데이트돼도 내가 고친 부분은 그대로 남아요. ②·③ 화면의 [✎ 키워드 편집]에서 고칠 수 있어요.</p>
+   <div class="row"><button class="btn line" data-act="kwExport">내 키워드 파일로 저장</button><button class="btn line" data-act="kwImport">키워드 파일 불러오기</button><input type="file" id="fileKw" accept=".json" style="display:none"><button class="btn line sm" data-act="kwReset">기본값으로 되돌리기</button></div>
+   <p class="hint">키워드 파일로 다른 선생님과 내가 만든 키워드를 주고받을 수 있어요 (학생 정보는 들어가지 않아요).</p></div>
+  <div class="panel"><h4>새 학년도 시작</h4><p class="hint">학년이 바뀔 때 눌러요. 지금 데이터를 백업한 뒤, 학생 명단·만든 문장·단원·상담·스포츠클럽 기록을 비워요.<br><b>남는 것:</b> 교육청, 설정, 내 키워드, 동아리 목록, 창체 활동 일정(연도만 바뀜)</p>
+   <div class="row"><button class="btn line" data-act="newYear">새 학년도 시작하기</button></div></div>
   <div class="panel"><h4>데이터</h4><p class="hint">모든 내용은 이 PC에만 저장돼요. 폴더: <span class="path">${esc(INFO?INFO.docsDir:'')}</span></p>
    <div class="row"><button class="btn line" data-act="openDocs">폴더 열기</button><button class="btn red" data-act="wipe">학생 데이터만 지우기</button></div>
    <p class="hint">학생 데이터만 지우기: 교육청·학년 설정은 남기고 학생 명단과 만든 문장만 지워요.</p></div>
@@ -1208,13 +1392,21 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.6.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.8.0</p></div></div>`;
 }
 
 /* ======================================================================
    이벤트
    ====================================================================== */
 const ACT={
+  aiArm:async()=>{
+    const c=aiCfg(),items=aiItems();if(!items.some(x=>x.text))return;
+    try{const r=await fetch('/api/autoinput',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items,tabs:+c.tabs,slow:!!c.slow,replace:!!c.replace})});
+      if(!r.ok){alert(await r.text());return;}}catch(e){alert('준비하지 못했어요: '+e.message);return;}
+    AISTAT={state:'armed',done:0,total:items.length};const p=$('aiPanel');if(p)p.outerHTML=aiPanel();
+    clearInterval(AIPOLL);AIPOLL=setInterval(aiPoll,500);
+  },
+  aiCancel:async()=>{try{await fetch('/api/autoinput',{method:'DELETE'});}catch(e){}aiPoll();},
   tab:el=>{if(!state.office)return;state.tab=el.dataset.v;save();render();window.scrollTo(0,0);},
   ccaGo:el=>{state.tab='cca';state.ui.ccaSub=el.dataset.v;save();render();window.scrollTo(0,0);},
   stop,
@@ -1222,8 +1414,9 @@ const ACT={
   retrySetup:async()=>{SPEC=null;await fetch('/api/setup',{method:'POST'});SETUP=null;setTimeout(()=>{getJSON('/api/spec').then(x=>{SPEC=x;const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}).catch(()=>{});pollSetup();},600);},
   pickOffice:el=>{state._pick=el.dataset.v;state.year=$('wYear').value||state.year;state.grade=$('wGrade').value;state.cls=$('wCls').value||'1';render();},
   welcomeDone:()=>{if(!state._pick){alert('교육청을 골라 주세요.');return;}state.office=state._pick;delete state._pick;state.year=$('wYear').value||state.year;state.grade=$('wGrade').value;state.cls=$('wCls').value||'1';state.tab='home';save();render();},
+  toggleOut:el=>{const s=byId(el.dataset.id);if(!s)return;if(!s.out&&!confirm(`${s.no}번 ${dname(s)} 학생을 전출 처리할까요? 기록은 지우지 않고 남겨 둬요.`))return;s.out=!s.out;if(s.out&&state.cur===s.id)state.cur=null;ensureCur();save();render();},
   setCount:()=>{
-    const n=Math.max(0,Math.min(60,parseInt($('cntIn').value)||0)),L=S();
+    const n=Math.max(0,Math.min(60,parseInt($('cntIn').value)||0)),L=SA();
     if(n>L.length){const base=L.length?L[L.length-1].no:0;for(let i=1;i<=n-L.length;i++)state.students.push(newStudent(base+i));}
     else if(n<L.length){const rm=L.slice(n);if(!confirm(`${rm[0].no}번부터 ${rm.length}명을 삭제할까요? 입력한 내용도 함께 지워져요.`))return;
       const ids=new Set(rm.map(s=>s.id));state.students=state.students.filter(s=>!ids.has(s.id));}
@@ -1240,31 +1433,40 @@ const ACT={
   pick:el=>{state.cur=el.dataset.id;save();render();},
   nextStu:()=>{const L=S(),i=L.findIndex(x=>x.id===state.cur);state.cur=(L[i+1]||L[0]).id;save();render();},
   hbView:el=>{state.ui.hbView=el.dataset.v;save();render();},
-  chip:el=>{const s=curS(),k=el.dataset.k,i=s.checks.indexOf(k);if(i>=0)s.checks.splice(i,1);else s.checks.push(k);save();el.classList.toggle('on');},
-  clearChecks:()=>{const s=curS();if(confirm('체크와 메모를 지울까요?')){s.checks=[];s.memo='';save();render();}},
+  chip:el=>{const s=curS();s.kws=s.kws||[];const k=el.dataset.k,i=s.kws.indexOf(k);if(i>=0)s.kws.splice(i,1);else s.kws.push(k);save();el.classList.toggle('on');},
+  clearChecks:()=>{const s=curS();if(confirm('체크와 메모를 지울까요?')){s.kws=[];s.checks=[];s.memo='';save();render();}},
+  kwEdit:()=>{state.ui.kwEdit=!state.ui.kwEdit;save();render();},
+  kwAdd:el=>{const t=(prompt(el.dataset.neg?'추가할 보완점을 짧게 쓰세요 (예: 준비물을 자주 빠뜨림)':'추가할 강점을 짧게 쓰세요 (예: 친구를 잘 도와줌)')||'').trim();if(!t)return;
+    const k=kwFix();(k.add[el.dataset.item]=k.add[el.dataset.item]||[]).push({id:'u_'+uid(),t:t.slice(0,40),...(el.dataset.neg?{neg:true}:{})});kwIndex();save();render();},
+  kwRen:el=>{const id=el.dataset.k,x=(KWMAP||kwIndex())[id];if(!x)return;const t=(prompt('키워드를 고치세요',x.t)||'').trim();if(!t||t===x.t)return;
+    const k=kwFix();if(x.user){Object.values(k.add).forEach(L=>L.forEach(y=>{if(y.id===id)y.t=t.slice(0,40);}));}else k.ren[id]=t.slice(0,40);kwIndex();save();render();},
+  kwDel:el=>{const id=el.dataset.k,x=(KWMAP||kwIndex())[id];if(!x||!confirm(`'${x.t}' 키워드를 지울까요? (모든 학생 목록에서 빠져요)`))return;
+    const k=kwFix();if(x.user){Object.keys(k.add).forEach(i=>k.add[i]=k.add[i].filter(y=>y.id!==id));}else if(!k.del.includes(id))k.del.push(id);
+    state.students.forEach(st=>{st.kws=(st.kws||[]).filter(z=>z!==id);Object.values(st.sub||{}).forEach(v=>{if(v.k)v.k=v.k.filter(z=>z!==id);});});kwIndex();save();render();},
   genHb:()=>run(async()=>{
-    const s=curS();if(!s.checks.length&&!s.memo.trim())throw new Error('관찰 항목을 체크하거나 메모를 입력하세요.');
+    const s=curS();if(!(s.kws||[]).length&&!s.memo.trim())throw new Error('관찰 항목을 체크하거나 메모를 입력하세요.');
     const extra=($('extraReq')||{}).value||'',o=hbOthers(s);prog('만드는 중… (다른 학생과 같은 문장이 생기면 자동으로 다시 써요)');
-    const r=await genUnique(hbMsgs(s,extra,o),o,t=>{const e=$('hbOut');if(e)e.value=t;});s.hb={text:r.text,flag:r.flag};
+    const r=await genUnique(hbMsgs(s,extra,o),o,t=>{const e=$('hbOut');if(e)e.value=t;},hbTarget());s.hb={text:r.text,flag:r.flag};
   }),
   bulkHb:()=>run(async()=>{
-    const T=S().filter(s=>s.checks.length||s.memo.trim());if(!T.length)throw new Error('체크된 학생이 없어요.');
+    const T=S().filter(s=>(s.kws||[]).length||s.memo.trim());if(!T.length)throw new Error('체크된 학생이 없어요.');
     const onlyMissing=confirm('이미 행발이 있는 학생은 건너뛸까요?\n(확인=건너뛰기, 취소=모두 새로 만들기)');
-    const extra=($('extraReq')||{}).value||'';let n=0;
-    for(const s of T){if(stopFlag)break;if(onlyMissing&&s.hb&&s.hb.text)continue;n++;
-      prog(`${s.no}번 ${dname(s)} 만드는 중… (${n}/${T.length})`);const o=hbOthers(s);
-      const r=await genUnique(hbMsgs(s,extra,o),o,t=>{if(s.id===state.cur){const e=$('hbOut');if(e)e.value=t;}});s.hb={text:r.text,flag:r.flag};save();}
+    const extra=($('extraReq')||{}).value||'';let n=0;const todo=T.filter(s=>!(onlyMissing&&s.hb&&s.hb.text)),eta=etaTimer(todo.length);
+    if(BENCH&&BENCH.hbSec&&todo.length)toast(`예상 시간 약 ${Math.max(1,Math.round(todo.length*BENCH.hbSec/60))}분 (속도 측정 기준)`);
+    for(const s of todo){if(stopFlag)break;n++;
+      prog(`${s.no}번 ${dname(s)} 만드는 중… (${n}/${todo.length})${eta(n-1)}`);const o=hbOthers(s);
+      const r=await genUnique(hbMsgs(s,extra,o),o,t=>{if(s.id===state.cur){const e=$('hbOut');if(e)e.value=t;}},hbTarget());s.hb={text:r.text,flag:r.flag};save();}
     toast(`${n}명 완료`);
   }),
   genNu:()=>run(async()=>{
     const s=curS(),memo=$('nuMemo').value.trim(),date=$('nuDate').value||today();if(!memo)throw new Error('이 날 있었던 일을 입력하세요.');
     const item={id:uid(),date,memo,text:'',flag:''},o=nuOthers(item.id),extra=($('extraReq')||{}).value||'';
     $('nuLive').innerHTML='<textarea id="nuLiveT" rows="3"></textarea>';
-    const r=await genUnique(nuMsgs(s,item,extra,o),o,t=>{const e=$('nuLiveT');if(e)e.value=t;});item.text=r.text;item.flag=r.flag;s.nu.push(item);
+    const r=await genUnique(nuMsgs(s,item,extra,o),o,t=>{const e=$('nuLiveT');if(e)e.value=t;},+state.settings.len.nu);item.text=r.text;item.flag=r.flag;s.nu.push(item);
   }),
   delNu:el=>{const s=curS();if(confirm('이 누가기록을 삭제할까요?')){s.nu=s.nu.filter(n=>n.id!==el.dataset.nid);save();render();}},
   /* ③ */
-  subjChip:el=>{const s=curS(),x=s.sub[state.ui.obsSubj]=subjInfo(s,state.ui.obsSubj),k=el.dataset.k,i=x.t.indexOf(k);if(i>=0)x.t.splice(i,1);else x.t.push(k);save();el.classList.toggle('on');},
+  subjChip:el=>{const s=curS(),x=s.sub[state.ui.obsSubj]=subjInfo(s,state.ui.obsSubj),k=el.dataset.k,i=x.k.indexOf(k);if(i>=0)x.k.splice(i,1);else x.k.push(k);save();el.classList.toggle('on');},
   subjLv:el=>{const s=curS(),x=s.sub[state.ui.obsSubj]=subjInfo(s,state.ui.obsSubj);x.lv=x.lv===el.dataset.v?'':el.dataset.v;save();render();},
   genObs:()=>run(async()=>{const s=curS();await genObsFor(s,state.ui.obsSubj,state.ui.obsSem,prog);}),
   bulkObs:el=>run(async()=>{
@@ -1272,9 +1474,10 @@ const ACT={
     if(!subs.length)throw new Error('단원을 입력한 과목이 없어요.');
     if(el.dataset.v==='all'){const miss=subjects().filter(x=>!unitsOf(x,sem).length);if(miss.length&&!confirm(`단원을 입력하지 않은 과목(${miss.join(', ')})은 건너뛰어요. 계속할까요?`))return;}
     const onlyMissing=confirm('이미 관찰기록이 있는 학생은 건너뛸까요?\n(확인=건너뛰기, 취소=모두 새로 만들기)');
-    const L=S();let n=0,total=L.length*subs.length;
-    for(const sub of subs)for(const s of L){if(stopFlag)return;n++;if(onlyMissing&&(s.obs[okey(sub,sem)]||[]).length)continue;
-      await genObsFor(s,sub,sem,t=>prog(`[${n}/${total}] ${sub} · ${s.no}번 ${dname(s)} · ${t}`));save();}
+    const L=S(),jobs=[];for(const sub of subs)for(const s of L)if(!(onlyMissing&&(s.obs[okey(sub,sem)]||[]).length))jobs.push([sub,s]);
+    const eta=etaTimer(jobs.length);let n=0;
+    for(const [sub,s] of jobs){if(stopFlag)return;n++;const e=eta(n-1);
+      await genObsFor(s,sub,sem,t=>prog(`[${n}/${jobs.length}] ${sub} · ${s.no}번 ${dname(s)} · ${t}${e}`));save();}
     toast('완료');
   }),
   /* ④ */
@@ -1295,8 +1498,9 @@ const ACT={
   bulkCca:el=>run(async()=>{
     const sub=state.ui.ccaSub,all=el.dataset.v==='all';if(all&&!confirm('이미 만든 누가기록까지 모두 새로 만들까요?'))return;
     const L=S();if(sub==='club'){const no=L.filter(s=>!clubOf(s));if(no.length===L.length)throw new Error('학생마다 동아리를 먼저 고르세요.');}
-    let n=0;for(const s of L){if(stopFlag)break;if(!all&&s.cca[sub].recs.length)continue;if(sub==='club'&&!clubOf(s))continue;n++;
-      await genCcaFor(s,sub,t=>prog(`${s.no}번 ${dname(s)} (${n}) · ${t}`));save();}
+    const todo=L.filter(s=>(all||!s.cca[sub].recs.length)&&!(sub==='club'&&!clubOf(s))),eta=etaTimer(todo.length);
+    let n=0;for(const s of todo){if(stopFlag)break;n++;const e=eta(n-1);
+      await genCcaFor(s,sub,t=>prog(`${s.no}번 ${dname(s)} (${n}/${todo.length}) · ${t}${e}`));save();}
     toast(`${n}명 완료`);
   }),
   /* ⑥ */
@@ -1338,6 +1542,23 @@ const ACT={
     $('stdPaste').value.split('\n').forEach(l=>{const m=l.trim().match(/^\[?\s*(\d[가-힣]{1,2}\d{2}-\d{2})\s*\]?\s*(.+)$/);if(m&&!stdList(cs).some(x=>x[0]===m[1])){arr.push([m[1],m[2].trim()]);n++;}});
     save();render();toast(n?`${n}개 추가`:'형식에 맞는 줄이 없어요');},
   clearStd:()=>{const cs=state.ui.stdSubj||subjects()[0];if(confirm('추가한 성취기준을 지울까요?')){delete state.customStd[cs];save();render();}},
+  kwExport:()=>{const b=new Blob([JSON.stringify({type:'saenggibu-keywords',base:KWB&&KWB.version,kw:kwFix()},null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`생기부도우미_키워드_${today()}.json`;document.body.appendChild(a);a.click();a.remove();toast('내려받았어요. 다운로드 폴더를 확인하세요.');},
+  kwImport:()=>{const f=$('fileKw');f.onchange=async e=>{const file=e.target.files[0];f.value='';if(!file)return;
+    try{const j=JSON.parse(await file.text());if(j.type!=='saenggibu-keywords'||!j.kw)throw 0;const k=kwFix(),n0=Object.values(k.add).reduce((a,L)=>a+L.length,0);
+      Object.entries(j.kw.add||{}).forEach(([iid,L])=>{const cur=k.add[iid]=k.add[iid]||[];(L||[]).forEach(x=>{if(x&&x.t&&!cur.some(y=>y.t===x.t))cur.push({id:'u_'+uid(),t:String(x.t).slice(0,40),...(x.neg?{neg:true}:{})});});});
+      (j.kw.del||[]).forEach(id=>{if(!k.del.includes(id))k.del.push(id);});Object.assign(k.ren,j.kw.ren||{});kwIndex();save();render();
+      toast(`키워드를 불러왔어요 (추가 ${Object.values(k.add).reduce((a,L)=>a+L.length,0)-n0}개)`);}catch(err){alert('생기부 도우미 키워드 파일이 아니에요.');}};f.click();},
+  kwReset:()=>{if(!confirm('내가 추가·수정·삭제한 키워드를 모두 없애고 기본값으로 되돌릴까요?\n(내가 추가한 키워드에 체크한 것은 풀려요)'))return;state.kw={add:{},del:[],ren:{}};kwIndex();save();render();toast('기본 키워드로 되돌렸어요');},
+  newYear:async()=>{
+    const g=prompt(`새 학년도(${(+state.year||new Date().getFullYear())+1}학년도)에 맡을 학년을 숫자로 입력하세요.\n지금 데이터는 백업한 뒤 학생 명단과 기록을 비워요.`,state.grade);if(g===null)return;
+    if(!/^[1-6]$/.test(String(g).trim())){alert('1~6 사이 숫자로 입력하세요.');return;}
+    await flush();await fetch('/api/backup',{method:'POST'});
+    const f=freshState(),y=(+state.year||new Date().getFullYear())+1;
+    const shiftYear=t=>(t||'').replace(/^\d{4}-/gm,'');
+    const ns={...f,office:state.office,year:String(y),grade:String(g).trim(),cls:state.cls,settings:state.settings,kw:kwFix(),customStd:state.customStd||{},tab:'roster',
+      cca:{...f.cca,...state.cca,auto:{...(state.cca.auto||{}),schedule:shiftYear(state.cca.auto&&state.cca.auto.schedule)},career:{...(state.cca.career||{}),schedule:shiftYear(state.cca.career&&state.cca.career.schedule)},club:{...(state.cca.club||{}),schedule:shiftYear(state.cca.club&&state.cca.club.schedule)}},
+      sports:{...f.sports,sport:state.sports.sport,sessions:state.sports.sessions},counsel:{rows:[],opt:state.counsel.opt}};
+    state=ns;await flush();toast(`${y}학년도 ${ns.grade}학년으로 시작해요. 이전 데이터는 백업 폴더에 있어요.`);render();},
   wipe:async()=>{if(confirm('학생 데이터를 모두 지울까요? (지우기 전에 백업을 한 번 남겨 둬요)')){await flush();await fetch('/api/backup',{method:'POST'});window._wiping=true;await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:'null'});location.reload();}},
   resetAll:async()=>{
     const delB=$('resetBackups').checked;
@@ -1362,10 +1583,13 @@ const ACT={
 };
 const AF=(o,k,v)=>{o[k]=v;};
 const BIND={
+  ai:el=>{const c=aiCfg(),k=el.dataset.k;c[k]=el.type==='checkbox'?el.checked:(el.type==='number'?Math.max(1,+el.value||1):el.value);
+    if(k==='kind')c.tabs=AI_TABS[c.kind];if(k==='cca')c.idx='all';save();
+    if(el.type!=='number'||k==='from'){const p=$('aiPanel');if(p)p.outerHTML=aiPanel();}},
   name:el=>{byId(el.dataset.id).name=el.value.trim();save();},
   gender:el=>{byId(el.dataset.id).gender=el.value;save();},
   memo:el=>{curS().memo=el.value;save();},
-  hbText:el=>{const s=curS();s.hb=s.hb||{text:'',flag:''};s.hb.text=el.value;s.hb.flag='';save();$('hbMeta').innerHTML=metaHtml(el.value,state.settings.len.hb,s,sameSentences(el.value,hbOthers(s)),'');},
+  hbText:el=>{const s=curS();s.hb=s.hb||{text:'',flag:''};s.hb.text=el.value;s.hb.flag='';save();$('hbMeta').innerHTML=metaHtml(el.value,hbTarget().max||0,s,sameSentences(el.value,hbOthers(s)),'');},
   nuText:el=>{const s=curS(),n=s.nu.find(x=>x.id===el.dataset.nid);n.text=el.value;n.flag='';save();$('nm_'+n.id).innerHTML=metaHtml(n.text,state.settings.len.nu,s,sameSentences(n.text,nuOthers(n.id)),'');},
   obsSem:el=>{state.ui.obsSem=el.value;save();render();},
   obsSubj:el=>{state.ui.obsSubj=el.value;save();render();},
@@ -1395,7 +1619,9 @@ const BIND={
   top:el=>{state[el.dataset.k]=el.value;save();if(el.tagName==='SELECT')render();else{$('whoText').textContent=`${state.year}학년도 ${state.grade}학년 ${state.cls}반 담임`;}},
   schoolRules:el=>{state.settings.schoolRules=el.value;save();},
   set:el=>{const k=el.dataset.k;state.settings[k]=+el.value||DEF_SETTINGS[k];save();},
+  ccaDate:el=>{state.cca.datePrefix=el.checked;save();render();},
   len:el=>{state.settings.len[el.dataset.k]=+el.value||DEF_SETTINGS.len[el.dataset.k];save();},
+  lenMode:el=>{const m=el.value,st=state.settings;st.lenMode=m;st.len.hb={char:400,byte:1500,sent:5}[m];save();render();toast(`행발 분량: ${hbTarget().label}`);},
   stdSubj:el=>{state.ui.stdSubj=el.value;save();render();},
 };
 
@@ -1410,14 +1636,14 @@ document.addEventListener('focusout',e=>{const el=e.target;if(el.dataset&&['ccaS
    ====================================================================== */
 (async function boot(){
   try{
-    [RULES,STD,INFO]=await Promise.all([getJSON('/data/rules.json'),getJSON('/data/standards.json'),getJSON('/api/info')]);
-    adopt(await getJSON('/api/state'));
+    [RULES,STD,KWB,INFO]=await Promise.all([getJSON('/data/rules.json'),getJSON('/data/standards.json'),getJSON('/data/keywords.json').catch(()=>null),getJSON('/api/info')]);
+    adopt(await getJSON('/api/state'));migrateKw();
     try{LITE=await getJSON('/api/lite');}catch(e){}
     getJSON('/api/spec').then(x=>{SPEC=x;const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}).catch(()=>{});
   }catch(e){$('view').innerHTML=`<div class="panel empty">프로그램과 연결할 수 없어요. 생기부 도우미를 다시 실행해 주세요.<br><span class="hint">${esc(e.message)}</span></div>`;return;}
   ensureCur();render();pollSetup();
   setInterval(()=>fetch('/api/ping').catch(()=>{}),60000);
-  setInterval(async()=>{try{INFO=await getJSON('/api/info');const v=INFO.update&&INFO.update.versions;if(v&&RULES&&v['rules.json']!==RULES.version){RULES=await getJSON('/data/rules.json');toast('기재요령이 최신 버전으로 업데이트됐어요');}if(v&&STD&&v['standards.json']!==STD.version)STD=await getJSON('/data/standards.json');}catch(e){}},300000);
+  setInterval(async()=>{try{INFO=await getJSON('/api/info');const v=INFO.update&&INFO.update.versions;if(v&&KWB&&v['keywords.json']&&v['keywords.json']!==KWB.version){KWB=await getJSON('/data/keywords.json');kwIndex();if(!busy)render();}if(v&&RULES&&v['rules.json']!==RULES.version){RULES=await getJSON('/data/rules.json');toast('기재요령이 최신 버전으로 업데이트됐어요');}if(v&&STD&&v['standards.json']!==STD.version)STD=await getJSON('/data/standards.json');}catch(e){}},300000);
 })();
 </script>
 </body>
