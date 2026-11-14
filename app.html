@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.11.0">
+<meta name="app-version" content="2.11.1">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -655,7 +655,7 @@ const GROW_T=['{t}(스스로 고치려고 노력하는 중)','{t}(나아지도�
 function tuneTraits(s){const sel=(s.kws||[]).map(kwLive).filter(Boolean),neg=sel.filter(x=>x.neg).slice(0,MAX_NEG);
   return [...sel.filter(x=>!x.neg).map(x=>x.t),...neg.map((x,i)=>x.g||GROW_T[(i+Math.max(0,idxOf(s)))%GROW_T.length].replace('{t}',x.t.replace(/[.]$/,'')))];}
 /* 문장 다듬기 점검: 조사 중복, 같은 낱말 연속, 같은 서술어·같은 구절 반복 */
-const JOSA_DUP=/(을를|를을|를를|을을|이가|가이|은는|는은|의의|에서에서|에게에게|으로으로|와과|과와|도도)(?=[\s.,])/;
+const JOSA_DUP=/(을를|를을|를를|을을|은는|는은|에서에서|에게에게|으로으로)(?=[\s.,])/; // '차이가', '의의' 같은 정상 낱말은 제외
 function josaIssue(t){return JOSA_DUP.test(t)||/(^|\s)(\S{2,})\s+\2(?=[\s.,]|$)/.test(t);}
 function sentEnds(t){return (t||'').split(/(?<=[.!?])\s+/).map(x=>x.replace(/[.!?\s]+$/,'')).filter(Boolean).map(x=>x.split(/\s+/).slice(-1)[0]);}
 function repeatIssue(t){
