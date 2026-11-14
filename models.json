@@ -1,0 +1,8 @@
+{
+ "version": "2026.11.1",
+ "note": "프로그램이 받을 AI 모델. 다시 학습한 모델을 Hugging Face(ssunzoon)에 새 저장소로 올린 뒤 tag만 바꾸면, exe를 바꾸지 않아도 다음 실행 때 새 모델을 받고 예전 모델은 지움. hf.co/ssunzoon/ 으로 시작하는 모델만 허용됨. 바꿀 때 version을 올릴 것.",
+ "models": {
+  "e2b": {"tag": "hf.co/ssunzoon/sgb-e2b-GGUF:Q4_K_M", "label": "Gemma 4 E2B 생기부 학습 · 표준", "gb": 3.3},
+  "g3": {"tag": "hf.co/ssunzoon/sgb-1b-GGUF:Q4_K_M", "label": "Gemma 3 1B 생기부 학습 · 가벼움", "gb": 0.8}
+ }
+}

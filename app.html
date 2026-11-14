@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.9.0">
+<meta name="app-version" content="2.10.0">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -227,7 +227,7 @@ const STEPS=[
  {n:5,tab:'cca',title:'창의적체험활동',desc:'자율·자치, 동아리, 진로활동 누가기록을 시간 순서대로 만들어요.'},
  {n:6,tab:'sports',title:'스포츠클럽',desc:'종목과 차시 수를 넣으면 차시별 활동명과 활동내용을 만들어요.'},
  {n:7,tab:'counsel',title:'학생상담',desc:'나이스 상담 업로드 엑셀 양식에 맞춰 상담 기록을 만들어요.'},
- {n:8,tab:'result',title:'검사·내보내기',desc:'똑같은 문장이 없는지 검사하고 엑셀로 내보내요.'},
+ {n:8,tab:'result',title:'검사·내보내기·NEIS 입력',desc:'똑같은 문장이 없는지 검사하고 엑셀로 내보내요.'},
  {n:9,tab:'set',title:'설정',desc:'교육청·학년, AI, 프로그램 삭제'},
 ];
 const CIRC='①②③④⑤⑥⑦⑧⑨';
@@ -622,7 +622,7 @@ async function chat(messages,onDelta,opts={}){
       continue;
     }
     hits=sensitiveHit(text,src);
-    if(text.trim()&&!badText(text)&&!hits.length)return text;
+    if(text.trim()&&!badText(text)&&!hits.length&&!(opts.tuned&&josaIssue(text)&&a<MAX_TRY-1))return text;
     if(text.trim()&&!hits.length&&!best)best=text; // 민감한 단어는 없는 후보는 남겨 둠
     QSTAT.retry++;
   }
@@ -647,17 +647,41 @@ function tuneMsgs(area,subj,n,kws){return [{role:'user',content:`${TUNE_SYS}\n\n
 function tuneMax(n){return Math.max(120,Math.round(lenTag(n)*2.2));}
 async function tuneChat(area,subj,n,kws,onDelta,opts={}){return await chat(tuneMsgs(area,subj,n,kws),onDelta,{temperature:TUNE_TEMP,max:tuneMax(n),...opts,tuned:true});}
 /* 체크한 특성 키워드: 강점은 그대로, 보완점은 노력하는 모습으로 */
-function tuneTraits(s){const sel=(s.kws||[]).map(kwLive).filter(Boolean);return [...sel.filter(x=>!x.neg).map(x=>x.t),...sel.filter(x=>x.neg).map(x=>`${x.t.replace(/[.]$/,'')} 부분을 고치려고 노력함`)];}
+const MAX_NEG=2; // 한 학생 글에 담을 보완점 수 (더 고르면 앞의 2개만)
+const GROW_T=['{t}(스스로 고치려고 노력하는 중)','{t}(나아지도록 꾸준히 노력함)','{t}(개선하려는 의지를 보임)'];
+function tuneTraits(s){const sel=(s.kws||[]).map(kwLive).filter(Boolean),neg=sel.filter(x=>x.neg).slice(0,MAX_NEG);
+  return [...sel.filter(x=>!x.neg).map(x=>x.t),...neg.map((x,i)=>x.g||GROW_T[(i+Math.max(0,idxOf(s)))%GROW_T.length].replace('{t}',x.t.replace(/[.]$/,'')))];}
+/* 문장 다듬기 점검: 조사 중복, 같은 낱말 연속, 같은 서술어·같은 구절 반복 */
+const JOSA_DUP=/(을를|를을|를를|을을|이가|가이|은는|는은|의의|에서에서|에게에게|으로으로|와과|과와|도도)(?=[\s.,])/;
+function josaIssue(t){return JOSA_DUP.test(t)||/(^|\s)(\S{2,})\s+\2(?=[\s.,]|$)/.test(t);}
+function sentEnds(t){return (t||'').split(/(?<=[.!?])\s+/).map(x=>x.replace(/[.!?\s]+$/,'')).filter(Boolean).map(x=>x.split(/\s+/).slice(-1)[0]);}
+function repeatIssue(t){
+  if(josaIssue(t))return 'josa';
+  const c={};for(const e of sentEnds(t)){c[e]=(c[e]||0)+1;if(c[e]>=3)return 'end';}
+  const S=(t||'').split(/(?<=[.!?])\s+/).map(x=>x.replace(/[^가-힣]/g,'')),seen=new Map();
+  for(let i=0;i<S.length;i++)for(let j=0;j+12<=S[i].length;j++){const g=S[i].slice(j,j+12),k=seen.get(g);if(k!==undefined&&k!==i)return 'phrase';if(k===undefined)seen.set(g,i);}
+  return '';
+}
+/* 마지막 수단: 같은 서술어가 3번 넘게 나오면 두 번째부터 비슷한 말로 바꿔 끼움 */
+const END_SYN={'노력함':['힘씀','애씀'],'참여함':['임함','함께함'],'실천함':['행동으로 옮김'],'기여함':['이바지함'],'향상됨':['나아짐'],'뛰어남':['우수함'],'돋보임':['눈에 띔'],'보임':['나타냄']};
+function varyEndings(t){const seen={};
+  return (t||'').split(/(?<=[.!?])\s+/).map(sn=>{const m=sn.match(/(\S+)([.!?]?)$/);if(!m)return sn;const e=m[1].replace(/[.!?]$/,'');seen[e]=(seen[e]||0)+1;
+    const syn=END_SYN[e];if(!syn||seen[e]<2||sentEnds(t).filter(x=>x===e).length<3)return sn;return sn.slice(0,sn.length-m[0].length)+syn[(seen[e]-2)%syn.length]+(m[2]||'.');}).join(' ');}
 function splitMemo(t){return String(t||'').split(/\n|[,;·]|(?<=[.!?])\s+/).map(x=>x.trim()).filter(x=>x.length>1);}
 /* 긴 글을 학습 모델로 쓸 때: 키워드를 몇 묶음으로 나눠 묶음마다 쓰고 이어 붙임 */
 async function chatChunks(m,onDelta){
   const out=[];
   for(const c of m.chunks){
     if(stopFlag)break;
-    const t=await chat(c.msgs,x=>onDelta&&onDelta([...out,x].join(' ')),{temperature:m.temp??TUNE_TEMP,max:tuneMax(c.n),tuned:true});
-    if(t&&t.trim())out.push(oneLine(t));
+    let t='';
+    for(let r=0;r<3&&!stopFlag;r++){
+      t=oneLine(await chat(c.msgs,x=>onDelta&&onDelta([...out,x].join(' ')),{temperature:Math.min(0.95,(m.temp??TUNE_TEMP)+0.15*r),max:tuneMax(c.n),tuned:true}));
+      if(!t||!repeatIssue([...out,t].join(' ')))break;
+      if(r===2&&repeatIssue(t))t=''; // 혼자서도 반복되는 묶음은 버림
+    }
+    if(t&&t.trim())out.push(t);
   }
-  return out.join(' ');
+  return varyEndings(out.join(' '));
 }
 const STYLE_TAIL=`\n\n[말투 - 꼭 지키기]\n· 모든 문장은 '~함.', '~임.', '~음.', '~됨.'처럼 명사형으로 끝냄 ('~합니다', '~입니다', '~한다' 금지)\n· '이 학생은', '그의', '그는' 같은 주어·대명사를 쓰지 않음\n· 응원, 기대, 칭찬 인사, 앞날 예측('~할 것임')을 쓰지 않고 관찰한 사실만 씀\n· 좋은 예: 수업 시간에 집중하여 자신의 생각을 조리 있게 발표함. 모둠 활동에서 친구의 의견을 존중하며 역할을 끝까지 해냄.`;
 async function chatOnce(messages,onDelta,opts={}){
@@ -698,7 +722,7 @@ function subjKw(subj){const b=subjBase(subj);return kwEff('subj.'+b.id,b.kw);}
 let KWMAP=null;
 function kwIndex(){ // id → 키워드 (지운 것·예전 것 포함)
   const m={},k=kwFix(),items={};
-  ((KWB&&KWB.areas)||[]).forEach(a=>a.items.forEach(it=>{items[it.id]={label:it.label,area:a.id,interest:!!it.interest};it.kw.forEach(x=>m[x.id]={...x,t:k.ren[x.id]||x.t,item:it.id,...items[it.id]});}));
+  ((KWB&&KWB.areas)||[]).forEach(a=>a.items.forEach(it=>{items[it.id]={label:it.label,area:a.id,interest:!!it.interest};it.kw.forEach(x=>m[x.id]={...x,t:k.ren[x.id]||x.t,g:k.ren[x.id]?'':(x.g||''),item:it.id,...items[it.id]});}));
   Object.values((KWB&&KWB.subjects)||{}).forEach(v=>(v.kw||[]).forEach(x=>m[x.id]={...x,t:k.ren[x.id]||x.t,item:'subj.'+v.id}));
   Object.entries(k.add).forEach(([iid,L])=>L.forEach(x=>m[x.id]={...x,item:iid,...(items[iid]||{}),user:true}));
   return KWMAP=m;
@@ -737,7 +761,8 @@ function hbMsgs(s,extra,others){
   if(tunedModel())return (a,avoid)=>{ // 학습 모델: [행발/약 N자] 키워드 형식, 길면 150자 안팎으로 나눠 씀
     const T=hbTarget(),n=T.max||(T.sents?T.sents*60:400);
     const kw=tuneKw([splitMemo(s.memo),tuneTraits(s),splitMemo(extra)]);
-    const k=Math.max(1,Math.min(kw.length||1,Math.ceil(n/150)));
+    const oneShot=/sgb-(e2b|1b)-v[2-9]/i.test(curModel()); // 긴 행발로 다시 학습한 모델(v2~)은 한 번에 씀
+    const k=oneShot?1:Math.max(1,Math.min(kw.length||1,Math.ceil(n/150)));
     const chunks=[];
     for(let i=0;i<k;i++){const part=kw.slice(Math.floor(i*kw.length/k),Math.floor((i+1)*kw.length/k));chunks.push({msgs:tuneMsgs('행발','',n/k,part),n:n/k});}
     return {chunks,temp:TUNE_TEMP+0.15*a};
@@ -1158,13 +1183,13 @@ function vHb(){
   if(view==='all'){
     const L=S();CLIP.push(()=>L.map(x=>oneLine(x.hb?.text||'')).join('\n'));const ai=CLIP.length-1;
     return title(2,T,D)+tabs+`<div class="sechead"><h3>행동특성 및 종합의견 - 학교생활기록부 반영기록</h3><span class="total">Total ${L.filter(x=>x.hb&&x.hb.text).length}</span><span class="sp"></span>
-    <button class="btn gen" data-act="bulkHb">학급 전체 한 번에 만들기</button><button class="btn navy stopBtn" data-act="stop">중지</button><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사(번호순)</button></div><div id="prog" class="prog"></div>
+    <button class="btn gen" data-act="bulkHb">학급 전체 한 번에 만들기</button><button class="btn navy stopBtn" data-act="stop">중지</button><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사(번호순)</button><button class="btn navy" data-act="aiGo" data-v="hb">⌨ NEIS 자동 입력</button></div><div id="prog" class="prog"></div>
     <div class="tblwrap"><table class="tbl"><thead><tr><th style="width:56px">번호</th><th style="width:100px">성명</th><th>행동특성 및 종합의견</th><th style="width:80px">글자수</th><th style="width:70px">복사</th></tr></thead><tbody>
     ${L.map(x=>{const t=x.hb?.text||'',d=t?sameSentences(t,hbOthers(x)):[];return `<tr><td class="c">${x.no}</td><td>${esc(dname(x))}</td><td>${esc(t)||'<span class="hint">아직 없음</span>'}${d.length?`<div class="dup">⛔ 똑같은 문장 ${d.length}개</div>`:''}</td><td class="c">${lenOf(t)}</td><td class="c">${t?clipBtn(()=>x.hb?.text||''):''}</td></tr>`;}).join('')}</tbody></table></div>`+nextbar(2);
   }
   const left=stuList(x=>`<span class="badge">${(x.kws||[]).length}</span>${x.hb&&x.hb.text?'<span class="badge ok">행</span>':''}`);
   const cats=kwAreas().map(a=>`<div class="cat area"><h5>${a.icon||''} ${esc(a.label)}</h5>${a.items.map(it=>kwItemRow(it,s.kws||[],'chip')).join('')}</div>`).join('')||'<div class="empty">키워드를 불러오는 중…</div>';
-  const mid=`<div class="panel"><h4>${s.no}번 ${esc(s.name)} <small>파랑=강점 · 빨강=보완점 · 몇 개만 골라도 돼요</small><span class="sp"></span>${kwEditBtn()}<button class="btn line sm" data-act="clearChecks">초기화</button></h4>${state.ui.kwEdit?'<div class="hint" style="color:var(--blue)">편집 중: ✎ 고치기 · × 지우기 · + 추가. 고친 내용은 모든 학생에게 똑같이 적용되고, 기본 키워드가 업데이트돼도 그대로 남아요.</div>':''}${cats}
+  const mid=`<div class="panel"><h4>${s.no}번 ${esc(s.name)} <small>파랑=강점 · 빨강=보완점(2개까지 반영) · 몇 개만 골라도 돼요</small><span class="sp"></span>${kwEditBtn()}<button class="btn line sm" data-act="clearChecks">초기화</button></h4>${state.ui.kwEdit?'<div class="hint" style="color:var(--blue)">편집 중: ✎ 고치기 · × 지우기 · + 추가. 고친 내용은 모든 학생에게 똑같이 적용되고, 기본 키워드가 업데이트돼도 그대로 남아요.</div>':''}${cats}
    <div class="hint" style="font-weight:700;color:#333">교사 관찰 메모</div><textarea data-bind="memo" rows="3" placeholder="예) 학급 회의에서 급식 순서 규칙을 제안해 반 전체가 따르게 됨.">${esc(s.memo)}</textarea>
    <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn line" data-act="nextStu">다음 학생 →</button></div></div>`;
   let right;
@@ -1231,7 +1256,7 @@ function vFin(){
    <label><span class="req">*</span>과목<select data-bind="finSubj">${subjects().map(x=>`<option ${x===subj?'selected':''}>${x}</option>`).join('')}</select></label>
    <span class="sp"></span><button class="btn" data-act="finAuto" data-v="subj">이 과목 자동으로 가져오기</button><button class="btn line" data-act="finAuto" data-v="all">전 과목 자동으로 가져오기</button></div>
    ${has?'':`<div class="panel empty">${subj} ${SEM[sem]} 관찰기록이 아직 없어요. ③ 교과 관찰내용관리에서 먼저 만드세요. <button class="btn" data-act="tab" data-v="obs">③으로 가기</button></div>`}
-   <div class="sechead"><h3>${subj} 교과학습발달상황 - ${SEM[sem]} 학기말 종합의견</h3><span class="total">Total ${texts.filter(Boolean).length}</span><span class="sp"></span><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사(번호순)</button></div>
+   <div class="sechead"><h3>${subj} 교과학습발달상황 - ${SEM[sem]} 학기말 종합의견</h3><span class="total">Total ${texts.filter(Boolean).length}</span><span class="sp"></span><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사(번호순)</button><button class="btn navy" data-act="aiGo" data-v="fin" data-subj="${esc(subj)}" data-sem="${sem}">⌨ NEIS 자동 입력</button></div>
    <div class="tblwrap"><table class="tbl"><thead><tr><th style="width:56px">번호</th><th style="width:100px">성명</th><th style="width:30%">관찰기록에서 고르기</th><th>학기말 종합의견</th><th style="width:70px">글자수</th><th style="width:70px">복사</th></tr></thead><tbody>
    ${L.map((s,i)=>{const recs=s.obs[key]||[],f=s.fin[key]||{},t=f.text||'';
      return `<tr><td class="c">${s.no}</td><td>${esc(dname(s))}</td><td>${recs.length?`<select data-bind="finPick" data-id="${s.id}" style="width:100%"><option value="">선택하세요</option>${recs.map((r,k)=>`<option value="${k}" ${r.text===t?'selected':''}>${k+1}. [${esc(r.unit.slice(0,10))}] ${esc(r.text.slice(0,40))}…</option>`).join('')}</select>`:'<span class="hint">관찰기록 없음</span>'}</td>
@@ -1256,7 +1281,7 @@ function vCca(){
   CLIP.push(()=>L.map(s=>s.cca[sub].recs.map(r=>`${s.no}\t${dname(s)}\t${r.date}\t${ccaOut(r)}`).join('\n')).filter(Boolean).join('\n'));const ai=CLIP.length-1;
   const table=`<label class="chk" style="margin:6px 0"><input type="checkbox" data-bind="ccaDate" ${state.cca.datePrefix?'checked':''}> 복사·자동 입력할 때 앞에 '활동명(날짜)' 붙이기 <span class="hint" style="margin:0">예) 학급 임원 선거(2026.03.06.) 학급 규칙을 …  · 날짜는 AI가 아니라 프로그램이 일정표대로 넣어요</span></label>
   <div class="sechead"><h3>${C.label} 누가기록</h3><span class="total">Total ${L.filter(s=>s.cca[sub].recs.length).length}명</span><span class="sp"></span>
-   <button class="btn gen" data-act="bulkCca" data-v="missing">미작성 학생 모두 만들기</button><button class="btn line gen" data-act="bulkCca" data-v="all">전체 다시 만들기</button><button class="btn navy stopBtn" data-act="stop">중지</button><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사</button></div><div id="prog" class="prog"></div>
+   <button class="btn gen" data-act="bulkCca" data-v="missing">미작성 학생 모두 만들기</button><button class="btn line gen" data-act="bulkCca" data-v="all">전체 다시 만들기</button><button class="btn navy stopBtn" data-act="stop">중지</button><button class="btn green" data-act="copy" data-i="${ai}">📋 전체 복사</button><button class="btn navy" data-act="aiGo" data-v="cca" data-cca="${sub}">⌨ NEIS 자동 입력</button></div><div id="prog" class="prog"></div>
    <div class="tblwrap"><table class="tbl"><thead><tr><th style="width:50px">번호</th><th style="width:90px">성명</th>${sub==='club'?'<th style="width:130px">동아리</th>':''}<th style="width:22%">학생별 언급할 내용</th><th>누가기록 (시간 순서)</th><th style="width:66px"></th></tr></thead><tbody>
    ${L.map(s=>{const st=s.cca[sub];return `<tr><td class="c">${s.no}</td><td>${esc(dname(s))}</td>
     ${sub==='club'?`<td><select data-bind="clubPick" data-id="${s.id}" style="width:100%"><option value="">선택</option>${clubs.map(c=>`<option value="${c.id}" ${st.clubId===c.id?'selected':''}>${esc(c.name||'(이름 없음)')}</option>`).join('')}</select></td>`:''}
@@ -1351,7 +1376,7 @@ async function autoFixAll(){
 }
 function vResult(){
   const rep=dupReport(),cats=categories().filter(c=>c.items.length);
-  return title(8,'검사·내보내기','모든 항목에서 똑같은 문장이 없는지 검사하고 엑셀로 내보내요. 똑같은 문장이 있으면 내보낼 수 없어요.')+
+  return title(8,'검사·내보내기·NEIS 입력','모든 항목에서 똑같은 문장이 없는지 검사하고 엑셀로 내보내거나, 나이스에 자동으로 입력해요. 똑같은 문장이 있으면 내보낼 수 없어요.')+
   `<div class="panel"><h4>같은 문장 검사</h4>${rep.length?`<div class="dup">⛔ 똑같은 문장 ${rep.length}개가 있어요.</div><div style="margin:8px 0;max-height:260px;overflow:auto">${rep.slice(0,60).map(r=>`<div class="hint">· [${esc(r.cat)}] ${esc(r.item.owner)} ↔ ${esc(r.who)}: ${esc(r.s)}</div>`).join('')}</div>
    <div class="row"><button class="btn gen" data-act="autoFix">AI로 자동 고치기</button><button class="btn navy stopBtn" data-act="stop">중지</button><span class="hint">직접 고쳐도 돼요.</span></div><div id="prog" class="prog"></div>`
    :'<span class="badge ok" style="font-size:14px;padding:5px 12px">✔ 모든 항목에서 똑같은 문장이 없어요</span>'}
@@ -1363,22 +1388,39 @@ function vResult(){
    <div class="row"><button class="btn line" data-act="backup">지금 백업</button><button class="btn line" data-act="openBackup">백업 폴더 열기</button><button class="btn line" data-act="restore">백업 불러오기</button><input type="file" id="fileRestore" accept=".json" style="display:none"></div></div>`+nextbar(8);
 }
 /* ---------- NEIS 자동 입력 ---------- */
-const AI_TABS={hb:2,fin:3,cca:2};
-function aiCfg(){const d={kind:'hb',subj:subjects()[0]||'국어',sem:'1',cca:'auto',idx:'all',tabs:2,replace:true,slow:false,from:1};state.ui.ai={...d,...(state.ui.ai||{})};return state.ui.ai;}
+const AI_TABS={hb:2,fin:3,cca:2,csv:2};
+function aiCfg(){const d={kind:'hb',subj:subjects()[0]||'국어',sem:'1',cca:'auto',idx:'all',tabs:2,replace:true,slow:false,from:1,csv:''};state.ui.ai={...d,...(state.ui.ai||{})};return state.ui.ai;}
 function aiText(s,c){
   if(c.kind==='hb')return s.hb?.text||'';
   if(c.kind==='fin')return s.fin[okey(c.subj,c.sem)]?.text||'';
   const recs=[...s.cca[c.cca].recs].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   return c.idx==='all'?recs.map(ccaOut).filter(Boolean).join(' '):(recs[+c.idx]?ccaOut(recs[+c.idx]):'');
 }
-function aiItems(){const c=aiCfg();return S().filter(s=>s.no>=(+c.from||1)).map(s=>({no:String(s.no),name:dname(s),text:oneLine(aiText(s,c))}));}
+/* 직접 넣기: data.csv처럼 "번호,내용" 줄, 엑셀에서 복사한 두 칸(번호⇥내용), 또는 내용만 한 줄에 한 명 */
+function parseCsvRows(t){const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=ch;}
+    else if(ch==='"'&&!f.trim())q=true;else if(ch===','||ch==='\t'){row.push(f);f='';}
+    else if(ch==='\n'){row.push(f);rows.push(row);row=[];f='';}else if(ch!=='\r')f+=ch;}
+  if(f||row.length){row.push(f);rows.push(row);}return rows;}
+function csvItems(t){const out=[];
+  parseCsvRows(String(t||'').replace(/^﻿/,'')).forEach(r=>{
+    if(r.length===1&&!r[0].trim())return;
+    if(r.length>=2&&/^\s*\d+\s*$/.test(r[0]))out.push({no:r[0].trim(),name:'',text:oneLine(r.slice(1).join(',').trim())});
+    else out.push({no:String(out.length+1),name:'',text:oneLine(r.join(',').trim())});});
+  return out;}
+async function aiLoadCsv(el){const f=el.files&&el.files[0];if(!f)return;const b=await f.arrayBuffer();let t;
+  try{t=new TextDecoder('utf-8',{fatal:true}).decode(b);}catch(e){t=new TextDecoder('euc-kr').decode(b);} // 엑셀에서 저장한 CSV(CP949)도 읽음
+  aiCfg().csv=t;save();const p=$('aiPanel');if(p)p.outerHTML=aiPanel();}
+let AICSVT=null;
+function aiItems(){const c=aiCfg();if(c.kind==='csv')return csvItems(c.csv).filter(x=>(+x.no||0)>=(+c.from||1));return S().filter(s=>s.no>=(+c.from||1)).map(s=>({no:String(s.no),name:dname(s),text:oneLine(aiText(s,c))}));}
 let AISTAT=null,AIPOLL=null;
 function aiPanel(){
   const c=aiCfg(),items=aiItems(),filled=items.filter(x=>x.text).length,maxRec=Math.max(0,...state.students.map(s=>s.cca[c.cca].recs.length));
   const st=AISTAT&&AISTAT.state;
   return `<div class="panel" id="aiPanel"><h4>NEIS 자동 입력 <span class="hint" style="font-weight:400">F2 한 번이면 학생 순서대로 나이스에 붙여넣어요</span></h4>
    <div class="filter" style="margin:0 0 8px">
-    <label>입력할 항목<select data-bind="ai" data-k="kind"><option value="hb" ${c.kind==='hb'?'selected':''}>행동특성 및 종합의견</option><option value="fin" ${c.kind==='fin'?'selected':''}>교과 학기말 종합의견</option><option value="cca" ${c.kind==='cca'?'selected':''}>창의적 체험활동 누가기록</option></select></label>
+    <label>입력할 항목<select data-bind="ai" data-k="kind"><option value="hb" ${c.kind==='hb'?'selected':''}>행동특성 및 종합의견</option><option value="fin" ${c.kind==='fin'?'selected':''}>교과 학기말 종합의견</option><option value="cca" ${c.kind==='cca'?'selected':''}>창의적 체험활동 누가기록</option><option value="csv" ${c.kind==='csv'?'selected':''}>직접 넣기 (CSV·엑셀 붙여넣기)</option></select></label>
     ${c.kind==='fin'?`<label>과목<select data-bind="ai" data-k="subj">${subjects().map(x=>`<option ${x===c.subj?'selected':''}>${esc(x)}</option>`).join('')}</select></label><label>학기<select data-bind="ai" data-k="sem">${['1','2'].map(x=>`<option value="${x}" ${x===c.sem?'selected':''}>${SEM[x]}</option>`).join('')}</select></label>`:''}
     ${c.kind==='cca'?`<label>영역<select data-bind="ai" data-k="cca">${['auto','club','career'].map(x=>`<option value="${x}" ${x===c.cca?'selected':''}>${CCA[x].label}</option>`).join('')}</select></label><label>누가기록<select data-bind="ai" data-k="idx"><option value="all" ${c.idx==='all'?'selected':''}>전부 합쳐서 한 칸에</option>${Array.from({length:maxRec},(_,i)=>`<option value="${i}" ${String(i)===String(c.idx)?'selected':''}>${i+1}번째${(()=>{const p=ccaPlan(c.cca)[i];return p?` · ${esc(p.date.slice(5))} ${esc(p.act||'')}`:'';})()}</option>`).join('')}</select></label>`:''}
     <label>Tab 횟수<input type="number" min="1" max="9" data-bind="ai" data-k="tabs" value="${c.tabs}" style="width:56px"></label>
@@ -1386,6 +1428,11 @@ function aiPanel(){
     <label class="chk"><input type="checkbox" data-bind="ai" data-k="replace" ${c.replace?'checked':''}> 칸에 있던 내용 지우고 넣기</label>
     <label class="chk"><input type="checkbox" data-bind="ai" data-k="slow" ${c.slow?'checked':''}> 천천히 (컴퓨터·나이스가 느릴 때)</label>
    </div>
+   ${c.kind==='csv'?`<div style="margin:0 0 8px"><textarea id="aiCsv" data-bind="ai" data-k="csv" rows="6" style="width:100%" placeholder="한 줄에 한 명씩 넣으세요.
+1,내용…   (data.csv 형식)
+1⇥내용…   (엑셀에서 번호·내용 두 칸을 복사해 붙여넣기)
+내용…      (번호 없이 내용만 → 위에서부터 1번)">${esc(c.csv)}</textarea>
+    <div class="row"><label class="btn line sm" style="cursor:pointer">📂 CSV 파일 불러오기<input type="file" accept=".csv,.txt" style="display:none" onchange="aiLoadCsv(this)"></label><span class="hint" style="margin:0">ChatGPT 등 다른 곳에서 만든 내용도 이렇게 넣을 수 있어요. 번호는 있는데 내용이 빈 줄은 건너뛰고 다음 칸으로 넘어가요.</span></div></div>`:''}
    <p class="hint">· Tab 횟수: 나이스에서 한 학생 칸에서 다음 학생 칸까지 Tab을 몇 번 눌러야 하는지예요. 보통 <b>행발·창체 2번, 학기말 종합의견 3번</b>이에요. 처음엔 2~3명만 해 보고 맞는지 확인하세요.<br>· 학생 <b>번호 순서</b>대로 들어가요. 나이스 화면의 학생 순서와 같아야 해요. 내용이 빈 학생은 건너뛰고 다음 칸으로 넘어가요.</p>
    <div style="max-height:180px;overflow:auto;border:1px solid var(--line);margin:6px 0"><table class="tbl" style="margin:0"><thead><tr><th style="width:50px">번호</th><th style="width:80px">성명</th><th>들어갈 내용</th><th style="width:70px">바이트</th></tr></thead><tbody>
     ${items.map(x=>`<tr><td class="c">${esc(x.no)}</td><td>${esc(x.name)}</td><td>${x.text?esc(x.text.slice(0,70))+(x.text.length>70?'…':''):'<span class="hint">(비어 있음 → 건너뜀)</span>'}</td><td class="c">${neisBytes(x.text||'')}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">학생이 없어요.</td></tr>'}
@@ -1500,6 +1547,8 @@ const ACT={
   },
   aiCancel:async()=>{try{await fetch('/api/autoinput',{method:'DELETE'});}catch(e){}aiPoll();},
   tab:el=>{if(!state.office)return;state.tab=el.dataset.v;save();render();window.scrollTo(0,0);},
+  aiGo:el=>{const c=aiCfg(),d=el.dataset;c.kind=d.v;c.tabs=AI_TABS[d.v];c.from=1;if(d.subj)c.subj=d.subj;if(d.sem)c.sem=d.sem;if(d.cca){c.cca=d.cca;c.idx='all';}
+    state.tab='result';save();render();setTimeout(()=>{const p=$('aiPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},50);},
   ccaGo:el=>{state.tab='cca';state.ui.ccaSub=el.dataset.v;save();render();window.scrollTo(0,0);},
   stop,
   copy:el=>{const c=CLIP[+el.dataset.i];doCopy(typeof c==='function'?c():c);},
@@ -1677,6 +1726,7 @@ const AF=(o,k,v)=>{o[k]=v;};
 const BIND={
   ai:el=>{const c=aiCfg(),k=el.dataset.k;c[k]=el.type==='checkbox'?el.checked:(el.type==='number'?Math.max(1,+el.value||1):el.value);
     if(k==='kind')c.tabs=AI_TABS[c.kind];if(k==='cca')c.idx='all';save();
+    if(k==='csv'){clearTimeout(AICSVT);AICSVT=setTimeout(()=>{const p=$('aiPanel'),ta=$('aiCsv');if(!p)return;const pos=ta?ta.selectionStart:0;p.outerHTML=aiPanel();const t=$('aiCsv');if(t){t.focus();t.setSelectionRange(pos,pos);}},600);return;}
     if(el.type!=='number'||k==='from'){const p=$('aiPanel');if(p)p.outerHTML=aiPanel();}},
   name:el=>{byId(el.dataset.id).name=el.value.trim();save();},
   gender:el=>{byId(el.dataset.id).gender=el.value;save();},
