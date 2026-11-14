@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.10.0">
+<meta name="app-version" content="2.11.0">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -266,6 +266,9 @@ let saveT=null;
 function save(){if(window._wiping)return;clearTimeout(saveT);saveT=setTimeout(flush,500);}
 function flush(){clearTimeout(saveT);return fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)}).catch(()=>toast('저장하지 못했어요. 프로그램이 켜져 있는지 확인하세요.'));}
 window.addEventListener('beforeunload',()=>{if(window._wiping)return;navigator.sendBeacon&&navigator.sendBeacon('/api/state',new Blob([JSON.stringify(state)],{type:'application/json'}));});
+/* 창을 닫으면 프로그램(과 AI)도 바로 끄도록 알림. 새로고침이면 새 창이 곧바로 신호를 보내 꺼지지 않음 */
+const TAB_ID=Math.random().toString(36).slice(2)+Date.now().toString(36);
+window.addEventListener('pagehide',()=>{if(window._wiping)return;navigator.sendBeacon&&navigator.sendBeacon('/api/bye?tab='+TAB_ID,'');});
 
 /* ======================================================================
    유틸
@@ -1784,7 +1787,7 @@ document.addEventListener('focusout',e=>{const el=e.target;if(el.dataset&&['ccaS
     getJSON('/api/spec').then(x=>{SPEC=x;const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}).catch(()=>{});
   }catch(e){$('view').innerHTML=`<div class="panel empty">프로그램과 연결할 수 없어요. 생기부 도우미를 다시 실행해 주세요.<br><span class="hint">${esc(e.message)}</span></div>`;return;}
   ensureCur();render();pollSetup();
-  setInterval(()=>fetch('/api/ping').catch(()=>{}),60000);
+  const ping=()=>fetch('/api/ping?tab='+TAB_ID).catch(()=>{});ping();setInterval(ping,20000);
   setInterval(async()=>{try{INFO=await getJSON('/api/info');const v=INFO.update&&INFO.update.versions;if(v&&KWB&&v['keywords.json']&&v['keywords.json']!==KWB.version){KWB=await getJSON('/data/keywords.json');kwIndex();if(!busy)render();}if(v&&RULES&&v['rules.json']!==RULES.version){RULES=await getJSON('/data/rules.json');toast('기재요령이 최신 버전으로 업데이트됐어요');}if(v&&STD&&v['standards.json']!==STD.version)STD=await getJSON('/data/standards.json');}catch(e){}},300000);
 })();
 </script>
