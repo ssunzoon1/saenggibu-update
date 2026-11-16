@@ -23,7 +23,7 @@
  "exe": {
   "version": "2.12.1",
   "file": "SaenggibuHelper.exe",
-  "sha256": "7e95eb97e333279d8d5b3526e1fc689de94d9ba016b9c5401c4675f2251aa760",
+  "sha256": "a7dd57b84df427ea4622a92d65d5e851349b8082ffe78ba01c3f7be201788367",
   "notes": "자동 업데이트·행발 길이 개선"
  }
 }
