@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.11.1">
+<meta name="app-version" content="2.11.2">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -764,8 +764,9 @@ function hbMsgs(s,extra,others){
   if(tunedModel())return (a,avoid)=>{ // 학습 모델: [행발/약 N자] 키워드 형식, 길면 150자 안팎으로 나눠 씀
     const T=hbTarget(),n=T.max||(T.sents?T.sents*60:400);
     const kw=tuneKw([splitMemo(s.memo),tuneTraits(s),splitMemo(extra)]);
-    const oneShot=/sgb-(e2b|1b)-v[2-9]/i.test(curModel()); // 긴 행발로 다시 학습한 모델(v2~)은 한 번에 씀
-    const k=oneShot?1:Math.max(1,Math.min(kw.length||1,Math.ceil(n/150)));
+    const m=curModel(); // 1B v2~는 한 번에, E2B v2~는 250자 안팎으로, 그 밖은 150자 안팎으로 나눠 씀(E2B는 한 번에 쓰면 요청의 절반 남짓만 씀)
+    const per=/sgb-1b-v[2-9]/i.test(m)?Infinity:/sgb-e2b-v[2-9]/i.test(m)?250:150;
+    const k=per===Infinity?1:Math.max(1,Math.min(kw.length||1,Math.ceil(n/per)));
     const chunks=[];
     for(let i=0;i<k;i++){const part=kw.slice(Math.floor(i*kw.length/k),Math.floor((i+1)*kw.length/k));chunks.push({msgs:tuneMsgs('행발','',n/k,part),n:n/k});}
     return {chunks,temp:TUNE_TEMP+0.15*a};

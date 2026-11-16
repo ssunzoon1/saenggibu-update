@@ -11,11 +11,11 @@
    "minExe": "2.8.0"
   },
   "app.html": {
-   "version": "2.11.1",
+   "version": "2.11.2",
    "minExe": "2.9.0"
   },
   "models.json": {
-   "version": "2026.11.1",
+   "version": "2026.11.16",
    "minExe": "2.10.0"
   }
  },
