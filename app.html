@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="2.11.2">
+<meta name="app-version" content="2.11.3">
 <title>생기부 도우미</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
@@ -554,7 +554,7 @@ function setStatus(){
 }
 async function pollSetup(){
   try{SETUP=await getJSON('/api/setup');}catch(e){SETUP={stage:'error',error:'프로그램과 연결이 끊겼어요. 생기부 도우미를 다시 실행하세요.'};}
-  setStatus();const box=$('setupBox');if(box)box.innerHTML=setupHtml();
+  setStatus();const box=$('setupBox');if(box)box.innerHTML=setupHtml();const cm=$('curModelName');if(cm&&SETUP&&SETUP.model)cm.textContent=SETUP.model;
   if(!aiReady()&&SETUP.stage!=='error'&&SETUP.stage!=='unsupported')setTimeout(pollSetup,1500);
   if(SETUP.stage==='unsupported'||SETUP.ready){try{SPEC=await getJSON('/api/spec');}catch(e){}const sb=$('specBox');if(sb)sb.innerHTML=specHtml();}
   if(aiReady())primeAI();
@@ -1500,7 +1500,7 @@ function vSet(){
    <div class="row"><label class="hint" style="margin:0">비슷함 허용 <input type="number" step="0.05" min="0.3" max="0.95" style="width:80px" data-bind="set" data-k="docSim" value="${st.docSim}"></label><label class="hint" style="margin:0">다시 쓰기 횟수 <input type="number" min="1" max="8" style="width:70px" data-bind="set" data-k="retries" value="${st.retries}"></label></div></div>
   </div><div>
   <div class="panel"><h4>AI</h4><div id="setupBox">${setupHtml()}</div>
-   <p class="hint">지금 모델: <b>${esc((SETUP&&SETUP.model)||(INFO&&INFO.model)||'-')}</b> · 이 PC 안에서만 작동해요.</p>
+   <p class="hint">지금 모델: <b id="curModelName">${esc((SETUP&&SETUP.model)||(INFO&&INFO.model)||'-')}</b> · 이 PC 안에서만 작동해요.</p>
    ${SPEC?`<div class="hint">이 PC 판정: <b>${esc(SPEC.spec.tierLabel)}</b> (램 ${SPEC.spec.ramGB.toFixed(0)}GB, ${SPEC.spec.cpus}스레드${SPEC.spec.vramGB>=1?`, 그래픽 ${SPEC.spec.vramGB.toFixed(0)}GB`:''}) · 추천 ${esc(SPEC.spec.modelLabel||'-')}</div>
    <div class="hint" style="font-weight:700;color:#333;margin-top:8px">AI 모델 고르기</div>
    <div class="row" style="margin:4px 0"><span class="seg">${[['auto','자동 (PC 성능에 맞게 · 추천)'],['e2b','Gemma 4 E2B 생기부 학습 · 3.3GB · 문장 좋음'],['g3','Gemma 3 1B 생기부 학습 · 0.8GB · 빠름']].map(([k,l])=>{const cur=SPEC.current||'';const on=k==='auto'?!SPEC.pinned:(SPEC.pinned&&SPEC.models&&SPEC.models[k]&&SPEC.models[k].Tag.toLowerCase()===cur.toLowerCase());return `<button class="${on?'on':''}" data-act="pickModel" data-v="${k}">${l}</button>`;}).join('')}</span></div>
