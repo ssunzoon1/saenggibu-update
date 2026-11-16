@@ -1535,7 +1535,7 @@ function vSet(){
    <label class="chk"><input type="checkbox" id="unOllama"> Ollama 프로그램 (다른 곳에서 Ollama를 쓰면 체크하지 마세요)</label>
    <label class="chk"><input type="checkbox" id="unSelf" checked> 생기부도우미.exe 파일</label>
    <button class="btn red" data-act="uninstall" style="margin-top:8px">프로그램 전체 삭제</button></div>
-  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 2.8.0</p></div></div>`;
+  <p class="hint">프로그램 버전 ${esc(INFO?INFO.version:'')} · 화면 버전 ${esc((document.querySelector('meta[name=app-version]')||{}).content||'')}</p></div></div>`;
 }
 
 /* ======================================================================
