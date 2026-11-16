@@ -11,13 +11,19 @@
    "minExe": "2.8.0"
   },
   "app.html": {
-   "version": "2.11.3",
-   "minExe": "2.9.0"
+   "version": "2.12.0",
+   "minExe": "2.12.0"
   },
   "models.json": {
    "version": "2026.11.16",
    "minExe": "2.10.0"
   }
  },
- "notice": ""
+ "notice": "",
+ "exe": {
+  "version": "2.12.0",
+  "file": "SaenggibuHelper.exe",
+  "sha256": "6c7c083df677893fecae692b0b1a9ca84643145133609c85c28e992344a191e1",
+  "notes": "자동 업데이트·행발 길이 개선"
+ }
 }

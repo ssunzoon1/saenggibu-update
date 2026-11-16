@@ -5,12 +5,14 @@
   "e2b": {
    "tag": "hf.co/ssunzoon/sgb-e2b-v2-GGUF:Q4_K_M",
    "label": "Gemma 4 E2B 생기부 학습 · 표준",
-   "gb": 3.3
+   "gb": 3.3,
+   "file": "sgb-e2b-v2-Q4_K_M.gguf"
   },
   "g3": {
    "tag": "hf.co/ssunzoon/sgb-1b-v2-GGUF:Q4_K_M",
    "label": "Gemma 3 1B 생기부 학습 · 가벼움",
-   "gb": 0.8
+   "gb": 0.8,
+   "file": "sgb-1b-v2-Q4_K_M.gguf"
   }
  }
 }
