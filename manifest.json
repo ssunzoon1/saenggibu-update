@@ -1,7 +1,7 @@
 {
  "files": {
   "rules.json": {
-   "version": "2026.11.1"
+   "version": "2026.11.20"
   },
   "standards.json": {
    "version": "2026.11.1"
@@ -11,7 +11,7 @@
    "minExe": "2.8.0"
   },
   "app.html": {
-   "version": "2.12.3",
+   "version": "2.12.7",
    "minExe": "2.12.0"
   },
   "models.json": {
@@ -21,9 +21,9 @@
  },
  "notice": "",
  "exe": {
-  "version": "2.12.5",
+  "version": "2.12.7",
   "file": "SaenggibuHelper.exe",
-  "sha256": "8763333f5144afa651e825c1a7e73682684ffa6b8dc7e4440463b52933096201",
-  "notes": "자동 업데이트·행발 길이 개선"
+  "sha256": "f9abd27ac2f46b65ec56310d8fe5e70365bf2b05524d5f3242ced4dafd5dffcc",
+  "notes": "생기부 점검(PDF)·기재요령 2026 점검·스포츠클럽 날짜"
  }
 }
