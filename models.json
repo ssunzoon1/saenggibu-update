@@ -1,22 +1,22 @@
 {
- "version": "2026.11.17",
+ "version": "2026.11.20",
  "note": "프로그램이 받을 AI 모델. 모델 파일은 Cloudflare R2(dl.oiout.com/models/)에 올려 두고 url로 받음(토큰 없음). 다시 학습한 모델은 새 파일 이름으로 R2에 올린 뒤 tag·file·url·sha256을 바꾸고 version을 올리면, exe를 바꾸지 않아도 다음 실행 때 새 모델을 받고 예전 모델은 지움. tag는 Ollama 안에서 쓰는 이름(hf.co/ssunzoon/ 으로 시작해야 함), url은 https://dl.oiout.com/models/ 로 시작해야 함. sha256은 비워 두면 확인을 건너뜀(채워 두는 걸 권장).",
  "models": {
   "e2b": {
-   "tag": "hf.co/ssunzoon/sgb-e2b-v2-GGUF:Q4_K_M",
+   "tag": "hf.co/ssunzoon/sgb-e2b-v4-GGUF:Q4_K_M",
    "label": "Gemma 4 E2B 생기부 학습 · 표준",
-   "gb": 3.3,
-   "file": "sgb-e2b-v2-Q4_K_M.gguf",
-   "url": "https://dl.oiout.com/models/sgb-e2b-v2-Q4_K_M.gguf",
-   "sha256": "325bc4653b47a91b4394fdb826ed61ec98903850b57bea76b31368913fb67911"
+   "gb": 3.4,
+   "file": "sgb-e2b-v4-Q4_K_M.gguf",
+   "url": "https://dl.oiout.com/models/sgb-e2b-v4-Q4_K_M.gguf",
+   "sha256": "5f58dd3d79701ebab2e75d3520de8baa2840760cdd7e447be641282f5387259c"
   },
   "g3": {
-   "tag": "hf.co/ssunzoon/sgb-1b-v2-GGUF:Q4_K_M",
+   "tag": "hf.co/ssunzoon/sgb-1b-v4-GGUF:Q4_K_M",
    "label": "Gemma 3 1B 생기부 학습 · 가벼움",
    "gb": 0.8,
-   "file": "sgb-1b-v2-Q4_K_M.gguf",
-   "url": "https://dl.oiout.com/models/sgb-1b-v2-Q4_K_M.gguf",
-   "sha256": "20b5c7e32c370c07908eaa4aabe57939c8f07fb9bc1ce6348871ae694b2981fb"
+   "file": "sgb-1b-v4-Q4_K_M.gguf",
+   "url": "https://dl.oiout.com/models/sgb-1b-v4-Q4_K_M.gguf",
+   "sha256": "9ca971f79367c1c24c67b37e55237f9c76975828c9d1da980b2050eb21af979e"
   }
  }
 }

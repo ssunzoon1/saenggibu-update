@@ -1,7 +1,7 @@
 {
  "files": {
   "rules.json": {
-   "version": "2026.11.20"
+   "version": "2026.11.23"
   },
   "standards.json": {
    "version": "2026.11.1"
@@ -11,19 +11,19 @@
    "minExe": "2.8.0"
   },
   "app.html": {
-   "version": "2.12.7",
+   "version": "2.12.10",
    "minExe": "2.12.0"
   },
   "models.json": {
-   "version": "2026.11.16",
+   "version": "2026.11.20",
    "minExe": "2.10.0"
   }
  },
  "notice": "",
  "exe": {
-  "version": "2.12.7",
+  "version": "2.12.10",
   "file": "SaenggibuHelper.exe",
-  "sha256": "f9abd27ac2f46b65ec56310d8fe5e70365bf2b05524d5f3242ced4dafd5dffcc",
-  "notes": "생기부 점검(PDF)·기재요령 2026 점검·스포츠클럽 날짜"
+  "sha256": "b8397f1459767b1d2c23e1f8b39e96cda3dfd2fd1a97678af9045ff175cac4d7",
+  "notes": "새 AI 모델(v4, 2026 기재요령 학습)·생기부 점검(PDF)·기재요령 점검·스포츠클럽 날짜"
  }
 }
