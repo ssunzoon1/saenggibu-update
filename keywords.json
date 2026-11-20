@@ -1,6 +1,6 @@
 {
- "version": "2026.11.2",
- "note": "키워드 기본값. id는 절대 바꾸지 말 것(선생님 선택·수정분이 id로 연결됨). 문구(t)는 고쳐도 됨. 지운 키워드는 deprecated:true로 남겨 두면 기존 선택이 유지됨. 보완점(neg) 키워드의 g는 학습 모델에 넘길 성장 표현(부정어를 그대로 쓰지 않기 위함).",
+ "version": "2026.11.20",
+ "note": "키워드 기본값. id는 절대 바꾸지 말 것(선생님 선택·수정분이 id로 연결됨). 문구(t)는 고쳐도 됨. 지운 키워드는 deprecated:true로 남겨 두면 기존 선택이 유지됨. 보완점(neg) 키워드의 g는 학습 모델에 넘길 성장 표현(부정어를 그대로 쓰지 않기 위함). 비슷한 키워드를 지울 때는 to에 옮겨 갈 키워드 id를 적으면 학생 선택이 그쪽으로 옮겨짐.",
  "areas": [
   {
    "id": "life",
@@ -33,7 +33,9 @@
       },
       {
        "id": "life.comm.p6",
-       "t": "학급 행사에 적극적임"
+       "t": "학급 행사에 적극적임",
+       "deprecated": true,
+       "to": "life.comm.p2"
       },
       {
        "id": "life.comm.p7",
@@ -59,7 +61,9 @@
        "id": "life.comm.n3",
        "t": "학급 일에 관심이 적은 편임",
        "neg": true,
-       "g": "학급 일에 관심을 가지고 참여하는 모습이 늘어남"
+       "g": "학급 일에 관심을 가지고 참여하는 모습이 늘어남",
+       "deprecated": true,
+       "to": "life.comm.n1"
       },
       {
        "id": "life.comm.n4",
@@ -99,7 +103,9 @@
       },
       {
        "id": "life.rule.p7",
-       "t": "공공장소에서 질서를 잘 지킴"
+       "t": "공공장소에서 질서를 잘 지킴",
+       "deprecated": true,
+       "to": "life.rule.p1"
       },
       {
        "id": "life.rule.p8",
@@ -141,7 +147,9 @@
       },
       {
        "id": "life.share.p2",
-       "t": "친구를 잘 배려함"
+       "t": "친구를 잘 배려함",
+       "deprecated": true,
+       "to": "life.share.p1"
       },
       {
        "id": "life.share.p3",
@@ -183,7 +191,9 @@
        "id": "life.share.n3",
        "t": "도움을 주고받는 데 서툶",
        "neg": true,
-       "g": "친구와 서로 도움을 주고받는 경험을 쌓아 가고 있음"
+       "g": "친구와 서로 도움을 주고받는 경험을 쌓아 가고 있음",
+       "deprecated": true,
+       "to": "char.act.n4"
       },
       {
        "id": "life.share.n4",
@@ -226,7 +236,9 @@
       },
       {
        "id": "char.pos.p6",
-       "t": "웃음이 많아 주변 분위기를 밝게 함"
+       "t": "웃음이 많아 주변 분위기를 밝게 함",
+       "deprecated": true,
+       "to": "char.pos.p1"
       },
       {
        "id": "char.pos.p7",
@@ -252,7 +264,9 @@
        "id": "char.pos.n3",
        "t": "결과에 쉽게 실망함",
        "neg": true,
-       "g": "결과보다 과정의 의미를 생각하려는 태도가 생기고 있음"
+       "g": "결과보다 과정의 의미를 생각하려는 태도가 생기고 있음",
+       "deprecated": true,
+       "to": "char.pos.n1"
       },
       {
        "id": "char.pos.n4",
@@ -280,11 +294,15 @@
       },
       {
        "id": "char.act.p4",
-       "t": "자기 의견을 분명히 말함"
+       "t": "자기 의견을 분명히 말함",
+       "deprecated": true,
+       "to": "life.comm.p7"
       },
       {
        "id": "char.act.p5",
-       "t": "궁금한 점을 스스로 찾아봄"
+       "t": "궁금한 점을 스스로 찾아봄",
+       "deprecated": true,
+       "to": "char.act.p3"
       },
       {
        "id": "char.act.p6",
@@ -308,7 +326,9 @@
        "id": "char.act.n2",
        "t": "자기표현이 부족함",
        "neg": true,
-       "g": "자신의 생각을 말이나 글로 표현하는 연습을 꾸준히 함"
+       "g": "자신의 생각을 말이나 글로 표현하는 연습을 꾸준히 함",
+       "deprecated": true,
+       "to": "char.act.n1"
       },
       {
        "id": "char.act.n3",
@@ -358,7 +378,9 @@
       },
       {
        "id": "char.friend.p8",
-       "t": "누구와 짝이 되어도 잘 지냄"
+       "t": "누구와 짝이 되어도 잘 지냄",
+       "deprecated": true,
+       "to": "char.friend.p1"
       },
       {
        "id": "char.friend.n1",
@@ -396,7 +418,9 @@
       },
       {
        "id": "char.self.p2",
-       "t": "끝까지 책임지고 해냄"
+       "t": "끝까지 책임지고 해냄",
+       "deprecated": true,
+       "to": "life.comm.p1"
       },
       {
        "id": "char.self.p3",
@@ -416,7 +440,9 @@
       },
       {
        "id": "char.self.p7",
-       "t": "시간을 계획적으로 사용함"
+       "t": "시간을 계획적으로 사용함",
+       "deprecated": true,
+       "to": "char.self.p3"
       },
       {
        "id": "char.self.p8",
@@ -444,7 +470,9 @@
        "id": "char.self.n4",
        "t": "물건을 자주 잃어버림",
        "neg": true,
-       "g": "자기 물건을 스스로 챙기는 습관을 기르는 중임"
+       "g": "자기 물건을 스스로 챙기는 습관을 기르는 중임",
+       "deprecated": true,
+       "to": "char.self.n2"
       }
      ]
     }
@@ -481,7 +509,9 @@
       },
       {
        "id": "learn.att.p6",
-       "t": "수업 준비를 미리 해 둠"
+       "t": "수업 준비를 미리 해 둠",
+       "deprecated": true,
+       "to": "char.self.p4"
       },
       {
        "id": "learn.att.p7",
@@ -507,7 +537,9 @@
        "id": "learn.att.n3",
        "t": "집중 시간이 짧음",
        "neg": true,
-       "g": "한 가지 활동에 오래 집중하는 연습을 하고 있음"
+       "g": "한 가지 활동에 오래 집중하는 연습을 하고 있음",
+       "deprecated": true,
+       "to": "learn.att.n1"
       },
       {
        "id": "learn.att.n4",
@@ -539,7 +571,9 @@
       },
       {
        "id": "learn.solve.p5",
-       "t": "탐구심이 강함"
+       "t": "탐구심이 강함",
+       "deprecated": true,
+       "to": "char.act.p3"
       },
       {
        "id": "learn.solve.p6",
@@ -547,7 +581,9 @@
       },
       {
        "id": "learn.solve.p7",
-       "t": "친구와 해결 방법을 나눔"
+       "t": "친구와 해결 방법을 나눔",
+       "deprecated": true,
+       "to": "life.share.p7"
       },
       {
        "id": "learn.solve.p8",
@@ -597,7 +633,9 @@
       },
       {
        "id": "learn.read.p4",
-       "t": "친구의 말을 잘 들음"
+       "t": "친구의 말을 잘 들음",
+       "deprecated": true,
+       "to": "char.friend.p6"
       },
       {
        "id": "learn.read.p5",
@@ -609,11 +647,15 @@
       },
       {
        "id": "learn.read.p7",
-       "t": "다양한 분야의 책을 읽음"
+       "t": "다양한 분야의 책을 읽음",
+       "deprecated": true,
+       "to": "learn.read.p1"
       },
       {
        "id": "learn.read.p8",
-       "t": "자신의 경험을 생생하게 표현함"
+       "t": "자신의 경험을 생생하게 표현함",
+       "deprecated": true,
+       "to": "learn.read.p2"
       },
       {
        "id": "learn.read.n1",
