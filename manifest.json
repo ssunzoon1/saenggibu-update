@@ -11,7 +11,7 @@
    "minExe": "2.8.0"
   },
   "app.html": {
-   "version": "2.12.11",
+   "version": "2.12.12",
    "minExe": "2.12.0"
   },
   "models.json": {
@@ -21,9 +21,9 @@
  },
  "notice": "",
  "exe": {
-  "version": "2.12.11",
+  "version": "2.12.12",
   "file": "SaenggibuHelper.exe",
-  "sha256": "bb5d7b94db3cfefe7e98895e9e19e081b5a91d33fc212520935e420a69c2b26b",
-  "notes": "새 AI 모델(v4)·생기부 점검(PDF)·기재요령 점검·스포츠클럽 날짜·비슷한 키워드 정리"
+  "sha256": "4c9e2d32b36e9248cf457b8ca7f75b3f8bd55ec3daefdebec609238ea0064dcb",
+  "notes": "새 AI 모델(v4)·생기부 점검(PDF)·기재요령 점검·스포츠클럽 날짜·키워드 정리·설정에 업데이트 확인 버튼"
  }
 }
